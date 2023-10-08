@@ -2,6 +2,7 @@ package bingo
 
 import (
 	"github.com/nokusukun/bingo"
+	"log"
 	"strings"
 )
 
@@ -23,28 +24,18 @@ type Function struct {
 	URL         string   `json:"url,omitempty"`
 }
 
-func GetFunction(s string, platform string) Function {
-	//result := functions.Query(bingo.Query[Functions]{
-	//	Filter: func(doc Functions) bool {
-	//		switch platform.(type) {
-	//		case excelFunctions:
-	//			return strings.Contains(strings.ToLower(doc.Excel.Name), strings.ToLower(s))
-	//		case sheetsFunctions:
-	//			return strings.Contains(strings.ToLower(doc.Sheets.Name), strings.ToLower(s))
-	//		}
-	//		return false
-	//	},
-	//})
-	//if !result.Any() {
-	//	fmt.Printf("No function found for %s\n", s)
-	//}
-	var db *bingo.Collection[Function]
+func getCollection(platform string) *bingo.Collection[Function] {
 	switch platform {
 	case "sheets":
-		db = sheetsFunctions
+		return sheetsFunctions
 	case "excel":
-		db = excelFunctions
+		return excelFunctions
 	}
+	return nil
+}
+
+func GetFunction(s string, platform string) Function {
+	db := getCollection(platform)
 
 	result := db.Query(bingo.Query[Function]{
 		Filter: func(doc Function) bool {
@@ -63,6 +54,14 @@ func GetFunction(s string, platform string) Function {
 	return *result.First()
 }
 
+func Record(f Function, platform string) {
+	db := getCollection(platform)
+	ir := db.Insert(f)
+	if ir.Error() != nil {
+		log.Fatal(ir.Error())
+	}
+}
+
 var driver *bingo.Driver
 
 func GetDriver() (*bingo.Driver, error) {
@@ -71,7 +70,7 @@ func GetDriver() (*bingo.Driver, error) {
 	}
 	config := bingo.DriverConfiguration{
 		DeleteNoVerify: false,
-		Filename:       "clippy.bingo",
+		Filename:       "clippy.bingo.db",
 	}
 	return bingo.NewDriver(config)
 }
@@ -79,7 +78,7 @@ func GetDriver() (*bingo.Driver, error) {
 func init() {
 	driver, err := GetDriver()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	clippy = ClippyCollection(driver)
 
