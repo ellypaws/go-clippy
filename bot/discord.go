@@ -15,7 +15,7 @@ import (
 var (
 	guildID        = flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
 	botToken       = flag.String("token", "", "Bot access token")
-	removeCommands = flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
+	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
 )
 
 var s *discordgo.Session
@@ -37,11 +37,11 @@ var (
 
 	commands = []*discordgo.ApplicationCommand{
 		{
-			Name: "basic-command",
+			Name: "hello",
 			// All commands and options must have a description
 			// Commands/options without description will fail the registration
 			// of the command.
-			Description: "Basic command",
+			Description: "Say hello to the bot",
 		},
 		{
 			Name:                     "permission-overview",
@@ -49,49 +49,49 @@ var (
 			DefaultMemberPermissions: &defaultMemberPermissions,
 			DMPermission:             &dmPermission,
 		},
-		{
-			Name:        "basic-command-with-files",
-			Description: "Basic command with files",
-		},
-		{
-			Name:        "localized-command",
-			Description: "Localized command. Description and name may vary depending on the Language setting",
-			NameLocalizations: &map[discordgo.Locale]string{
-				discordgo.ChineseCN: "本地化的命令",
-			},
-			DescriptionLocalizations: &map[discordgo.Locale]string{
-				discordgo.ChineseCN: "这是一个本地化的命令",
-			},
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "localized-option",
-					Description: "Localized option. Description and name may vary depending on the Language setting",
-					NameLocalizations: map[discordgo.Locale]string{
-						discordgo.ChineseCN: "一个本地化的选项",
-					},
-					DescriptionLocalizations: map[discordgo.Locale]string{
-						discordgo.ChineseCN: "这是一个本地化的选项",
-					},
-					Type: discordgo.ApplicationCommandOptionInteger,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name: "First",
-							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.ChineseCN: "一的",
-							},
-							Value: 1,
-						},
-						{
-							Name: "Second",
-							NameLocalizations: map[discordgo.Locale]string{
-								discordgo.ChineseCN: "二的",
-							},
-							Value: 2,
-						},
-					},
-				},
-			},
-		},
+		//{
+		//	Name:        "basic-command-with-files",
+		//	Description: "Basic command with files",
+		//},
+		//{
+		//	Name:        "localized-command",
+		//	Description: "Localized command. Description and name may vary depending on the Language setting",
+		//	NameLocalizations: &map[discordgo.Locale]string{
+		//		discordgo.ChineseCN: "本地化的命令",
+		//	},
+		//	DescriptionLocalizations: &map[discordgo.Locale]string{
+		//		discordgo.ChineseCN: "这是一个本地化的命令",
+		//	},
+		//	Options: []*discordgo.ApplicationCommandOption{
+		//		{
+		//			Name:        "localized-option",
+		//			Description: "Localized option. Description and name may vary depending on the Language setting",
+		//			NameLocalizations: map[discordgo.Locale]string{
+		//				discordgo.ChineseCN: "一个本地化的选项",
+		//			},
+		//			DescriptionLocalizations: map[discordgo.Locale]string{
+		//				discordgo.ChineseCN: "这是一个本地化的选项",
+		//			},
+		//			Type: discordgo.ApplicationCommandOptionInteger,
+		//			Choices: []*discordgo.ApplicationCommandOptionChoice{
+		//				{
+		//					Name: "First",
+		//					NameLocalizations: map[discordgo.Locale]string{
+		//						discordgo.ChineseCN: "一的",
+		//					},
+		//					Value: 1,
+		//				},
+		//				{
+		//					Name: "Second",
+		//					NameLocalizations: map[discordgo.Locale]string{
+		//						discordgo.ChineseCN: "二的",
+		//					},
+		//					Value: 2,
+		//				},
+		//			},
+		//		},
+		//	},
+		//},
 		{
 			Name:        "function",
 			Description: "Look up a function in Excel or Google Sheets",
@@ -170,43 +170,43 @@ var (
 				//},
 			},
 		},
-		{
-			Name:        "subcommands",
-			Description: "Subcommands and command groups example",
-			Options: []*discordgo.ApplicationCommandOption{
-				// When a command has subcommands/subcommand groups
-				// It must not have top-level options, they aren't accesible in the UI
-				// in this case (at least not yet), so if a command has
-				// subcommands/subcommand any groups registering top-level options
-				// will cause the registration of the command to fail
-
-				{
-					Name:        "subcommand-group",
-					Description: "Subcommands group",
-					Options: []*discordgo.ApplicationCommandOption{
-						// Also, subcommand groups aren't capable of
-						// containing options, by the name of them, you can see
-						// they can only contain subcommands
-						{
-							Name:        "nested-subcommand",
-							Description: "Nested subcommand",
-							Type:        discordgo.ApplicationCommandOptionSubCommand,
-						},
-					},
-					Type: discordgo.ApplicationCommandOptionSubCommandGroup,
-				},
-				// Also, you can create both subcommand groups and subcommands
-				// in the command at the same time. But, there's some limits to
-				// nesting, count of subcommands (top level and nested) and options.
-				// Read the intro of slash-commands docs on Discord dev portal
-				// to get more information
-				{
-					Name:        "subcommand",
-					Description: "Top-level subcommand",
-					Type:        discordgo.ApplicationCommandOptionSubCommand,
-				},
-			},
-		},
+		//{
+		//	Name:        "subcommands",
+		//	Description: "Subcommands and command groups example",
+		//	Options: []*discordgo.ApplicationCommandOption{
+		//		// When a command has subcommands/subcommand groups
+		//		// It must not have top-level options, they aren't accesible in the UI
+		//		// in this case (at least not yet), so if a command has
+		//		// subcommands/subcommand any groups registering top-level options
+		//		// will cause the registration of the command to fail
+		//
+		//		{
+		//			Name:        "subcommand-group",
+		//			Description: "Subcommands group",
+		//			Options: []*discordgo.ApplicationCommandOption{
+		//				// Also, subcommand groups aren't capable of
+		//				// containing options, by the name of them, you can see
+		//				// they can only contain subcommands
+		//				{
+		//					Name:        "nested-subcommand",
+		//					Description: "Nested subcommand",
+		//					Type:        discordgo.ApplicationCommandOptionSubCommand,
+		//				},
+		//			},
+		//			Type: discordgo.ApplicationCommandOptionSubCommandGroup,
+		//		},
+		//		// Also, you can create both subcommand groups and subcommands
+		//		// in the command at the same time. But, there's some limits to
+		//		// nesting, count of subcommands (top level and nested) and options.
+		//		// Read the intro of slash-commands docs on Discord dev portal
+		//		// to get more information
+		//		{
+		//			Name:        "subcommand",
+		//			Description: "Top-level subcommand",
+		//			Type:        discordgo.ApplicationCommandOptionSubCommand,
+		//		},
+		//	},
+		//},
 		{
 			Name:        "responses",
 			Description: "Interaction responses testing initiative",
@@ -236,7 +236,7 @@ var (
 	}
 
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		"basic-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"hello": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -295,43 +295,12 @@ var (
 
 			// Get the value from the option map.
 			// When the option exists, ok = true
-			if option, ok := optionMap["string-option"]; ok {
+			if option, ok := optionMap["function"]; ok {
 				// Option values must be type asserted from interface{}.
 				// Discordgo provides utility functions to make this simple.
 				margs = append(margs, option.StringValue())
 				msgformat += "> string-option: %s\n"
 			}
-
-			if opt, ok := optionMap["integer-option"]; ok {
-				margs = append(margs, opt.IntValue())
-				msgformat += "> integer-option: %d\n"
-			}
-
-			if opt, ok := optionMap["number-option"]; ok {
-				margs = append(margs, opt.FloatValue())
-				msgformat += "> number-option: %f\n"
-			}
-
-			if opt, ok := optionMap["bool-option"]; ok {
-				margs = append(margs, opt.BoolValue())
-				msgformat += "> bool-option: %v\n"
-			}
-
-			if opt, ok := optionMap["channel-option"]; ok {
-				margs = append(margs, opt.ChannelValue(nil).ID)
-				msgformat += "> channel-option: <#%s>\n"
-			}
-
-			if opt, ok := optionMap["user-option"]; ok {
-				margs = append(margs, opt.UserValue(nil).ID)
-				msgformat += "> user-option: <@%s>\n"
-			}
-
-			if opt, ok := optionMap["role-option"]; ok {
-				margs = append(margs, opt.RoleValue(nil, "").ID)
-				msgformat += "> role-option: <@&%s>\n"
-			}
-
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				// Ignore type for now, they will be discussed in "responses"
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -465,15 +434,28 @@ var (
 						"Congratulations!"
 				content +=
 					"\nAlso... you can edit your response, wait 5 seconds and this message will be changed"
-			default:
+			case int64(discordgo.InteractionResponseDeferredChannelMessageWithSource):
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseType(i.ApplicationCommandData().Options[0].IntValue()),
 				})
 				if err != nil {
 					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
-						Content: "Something went wrong",
+						Content: "Something went wrong 01",
 					})
 				}
+				time.AfterFunc(time.Second*5, func() {
+					content = "Now we're responding after 5 seconds of waiting. "
+
+					_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+						Content: &content,
+					})
+					if err != nil {
+						s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+							Content: "Something went wrong 02",
+						})
+						return
+					}
+				})
 				return
 			}
 
