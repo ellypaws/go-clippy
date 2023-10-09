@@ -32,18 +32,8 @@ import (
 //}
 
 func RecordExcel() []Function {
-	client := &http.Client{}
-	request, err := http.NewRequest("GET", "https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188", nil)
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-	response, err := client.Do(request)
+	doc, err := urlToDocument("https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188")
 	if err != nil {
-		fmt.Println("Failed to request the webpage")
-		return nil
-	}
-	defer response.Body.Close()
-	doc, err := goquery.NewDocumentFromReader(response.Body)
-	if err != nil {
-		fmt.Println("Failed to parse the webpage")
 		return nil
 	}
 
@@ -69,6 +59,24 @@ func RecordExcel() []Function {
 	return functions
 }
 
+func urlToDocument(url string) (*goquery.Document, error) {
+	client := &http.Client{}
+	request, err := http.NewRequest("GET", url, nil)
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Failed to request the webpage")
+		return nil, err
+	}
+	defer response.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(response.Body)
+	if err != nil {
+		fmt.Println("Failed to parse the webpage")
+		return nil, err
+	}
+	return doc, nil
+}
+
 func UpdateURLs(functions []Function) {
 	for i, function := range functions {
 		if function.Syntax.Raw != "" {
@@ -79,19 +87,8 @@ func UpdateURLs(functions []Function) {
 }
 
 func UpdateSingleURL(function *Function) {
-	client := &http.Client{}
-	request, err := http.NewRequest("GET", function.URL, nil)
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-	response, err := client.Do(request)
+	doc, err := urlToDocument(function.URL)
 	if err != nil {
-		fmt.Println("Failed to request the webpage")
-		return
-	}
-	defer response.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(response.Body)
-	if err != nil {
-		fmt.Println("Failed to parse the webpage")
 		return
 	}
 
@@ -144,7 +141,13 @@ func parseSyntaxSection(s *goquery.Selection, function *Function) {
 			text := child.Text()
 			text = strings.ReplaceAll(text, "Required", "__Required__")
 			text = strings.ReplaceAll(text, "Optional", "__Optional__")
-			text = "`" + strings.TrimSpace(child.Find("b.ocpLegacyBold").Text()) + strings.ReplaceAll(text, child.Find("b.ocpLegacyBold").Text(), "") + "`"
+			text = strings.TrimSpace(child.Find("b.ocpLegacyBold").Text()) + strings.ReplaceAll(text, child.Find("b.ocpLegacyBold").Text(), "")
+
+			// Add `function()` syntax highlighting on the first line
+			if rawBuilder.Len() == 0 {
+				text = "`" + text + "`"
+			}
+
 			rawBuilder.WriteString(strings.TrimSpace(text))
 			rawBuilder.WriteString("\n")
 
