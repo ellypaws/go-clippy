@@ -149,13 +149,16 @@ func parseSyntaxSection(s *goquery.Selection, function *Function) {
 			rawBuilder.WriteString("\n")
 
 		case child.Is("ul"):
-			child.Find("li").Each(func(j int, item *goquery.Selection) {
+			selection := child.Find("li")
+			selection.Each(func(j int, item *goquery.Selection) {
 				text := strings.TrimSpace(item.Text())
 				text = strings.ReplaceAll(text, "Required", "__Required__")
 				text = strings.ReplaceAll(text, "Optional", "__Optional__")
 				text = "`" + strings.TrimSpace(item.Find("b.ocpRunInHead").Text()) + "`" + strings.ReplaceAll(text, item.Find("b.ocpRunInHead").Text(), "")
 				rawBuilder.WriteString(strings.TrimSpace(text))
-				rawBuilder.WriteString("\n")
+				if selection.Size() < j {
+					rawBuilder.WriteString("\n")
+				}
 			})
 
 		}
