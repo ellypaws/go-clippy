@@ -1,4 +1,6 @@
-package bingo
+package main
+
+import "go-clippy/database/functions"
 
 //type Function struct {
 //	Name        string   `json:"name,omitempty"`
@@ -26,15 +28,15 @@ package bingo
 
 type SheetsScraper struct{}
 
-func (s *SheetsScraper) Scrape() []Function {
+func (s *SheetsScraper) Scrape() []functions.Function {
 	// Implement similar to RecordExcel but for Google Sheets
 	return nil
 }
 
-func (s *SheetsScraper) UpdateUrls(functions []Function) {
+func (s *SheetsScraper) UpdateUrls(functions []functions.Function) {
 	// Implement similar to UpdateExcelUrls but for Google Sheets
 }
 
-func (s *SheetsScraper) UpdateSingleUrl(function *Function) {
+func (s *SheetsScraper) UpdateSingleUrl(function *functions.Function) {
 	// Implement similar to UpdateSingleExcelUrl but for Google Sheets
 }

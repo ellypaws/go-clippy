@@ -1,7 +1,9 @@
-package bingo
+package main
 
 import (
 	"github.com/PuerkitoBio/goquery"
+	"go-clippy/database"
+	"go-clippy/database/functions"
 	"strings"
 )
 
@@ -31,13 +33,13 @@ import (
 
 type ExcelUrl string
 
-func (url *ExcelUrl) Scrape() []Function {
-	doc, err := UrlToDocument(string(*url))
+func (url *ExcelUrl) Scrape() []functions.Function {
+	doc, err := bingo.UrlToDocument(string(*url))
 	if err != nil {
 		return nil
 	}
 
-	var functions []Function
+	var f []functions.Function
 	doc.Find("#supArticleContent > article > section.ocpIntroduction > table").Each(func(i int, table *goquery.Selection) {
 		table.Find("tbody tr").Each(func(j int, tr *goquery.Selection) {
 			funcName := tr.Find("td:first-child p a")
@@ -46,20 +48,20 @@ func (url *ExcelUrl) Scrape() []Function {
 			if !strings.HasPrefix(url, "http") {
 				url = "https://support.microsoft.com" + url
 			}
-			function := Function{
+			function := functions.Function{
 				Name:        strings.TrimSpace(strings.Split(funcName.Text(), " ")[0]),
 				URL:         url,
 				Category:    strings.TrimSpace(categoryDesc[0]),
 				Description: strings.TrimSpace(categoryDesc[1]),
 			}
-			functions = append(functions, function)
+			f = append(f, function)
 		})
 	})
 
-	return functions
+	return f
 }
 
-func (url *ExcelUrl) UpdateUrls(functions []Function) {
+func (url *ExcelUrl) UpdateUrls(functions []functions.Function) {
 	for i, function := range functions {
 		if function.Syntax.Raw != "" {
 			continue
@@ -68,8 +70,8 @@ func (url *ExcelUrl) UpdateUrls(functions []Function) {
 	}
 }
 
-func (url *ExcelUrl) UpdateSingleUrl(function *Function) {
-	doc, err := UrlToDocument(function.URL)
+func (url *ExcelUrl) UpdateSingleUrl(function *functions.Function) {
+	doc, err := bingo.UrlToDocument(function.URL)
 	if err != nil {
 		return
 	}
@@ -111,7 +113,7 @@ func (url *ExcelUrl) UpdateSingleUrl(function *Function) {
 	})
 }
 
-func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *Function) {
+func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *functions.Function) {
 	syntaxSection := s.Find("section .ocpSection h2:contains('Syntax')").First().Parent()
 
 	// Transform the Syntax section into the desired Raw format
@@ -151,7 +153,7 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *Function
 
 	function.Syntax.Layout = strings.TrimSpace(syntaxSection.Find("p").First().Text())
 
-	function.Syntax.Args = map[string]Args{}
+	function.Syntax.Args = map[string]functions.Args{}
 	if len(section) < 3 {
 		return
 	}
@@ -204,7 +206,7 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *Function
 		}
 
 		// Add the argument to the Syntax.Args map
-		function.Syntax.Args[argName] = Args{
+		function.Syntax.Args[argName] = functions.Args{
 			Description: description,
 			Type:        argType,
 			Variadic:    variadic,

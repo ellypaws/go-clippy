@@ -1,11 +1,14 @@
-package bingo
+package main
 
-import "strings"
+import (
+	"go-clippy/database/functions"
+	"strings"
+)
 
 type FunctionScraper interface {
-	Scrape() []Function
-	UpdateUrls([]Function)
-	UpdateSingleUrl(*Function)
+	Scrape() []functions.Function
+	UpdateUrls([]functions.Function)
+	UpdateSingleUrl(*functions.Function)
 }
 
 func UrlToScrape(url string) FunctionScraper {
