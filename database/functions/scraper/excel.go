@@ -34,7 +34,7 @@ import (
 type ExcelUrl string
 
 func (url *ExcelUrl) Scrape() []functions.Function {
-	doc, err := bingo.UrlToDocument(string(*url))
+	doc, err := database.UrlToDocument(string(*url))
 	if err != nil {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (url *ExcelUrl) UpdateUrls(functions []functions.Function) {
 }
 
 func (url *ExcelUrl) UpdateSingleUrl(function *functions.Function) {
-	doc, err := bingo.UrlToDocument(function.URL)
+	doc, err := database.UrlToDocument(function.URL)
 	if err != nil {
 		return
 	}

@@ -51,7 +51,7 @@ func testSection(i int) []string {
 	return nil
 }
 
-func main() {
+func SyntaxTest() {
 	function := Function{
 		Name:     "test",
 		Category: "test",
@@ -67,15 +67,15 @@ func main() {
 		Version:     []string{"test"},
 	}
 	testParse(&function)
-	json, _ := json.MarshalIndent(function, "", "    ")
-	os.WriteFile("test.json", json, 0644)
-	fmt.Println(string(json))
+	bytes, _ := json.MarshalIndent(function, "", "    ")
+	os.WriteFile("test.json", bytes, 0644)
+	fmt.Println(string(bytes))
 }
 
 func testParse(function *Function) {
 	function.Syntax.Args = map[string]Args{}
 	// TODO: Parse arguments
-	// Read from the raw syntax and parse the arguments
+	// Read from the raw syntax and scraper the arguments
 	// We can read from section[2:] to ignore the first 2 lines
 	// Example:
 
