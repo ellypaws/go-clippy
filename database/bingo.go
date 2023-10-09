@@ -22,6 +22,7 @@ type Function struct {
 	Example     string   `json:"example,omitempty"`
 	Description string   `json:"description,omitempty"`
 	URL         string   `json:"url,omitempty"`
+	SeeAlso     string   `json:"seealso,omitempty"`
 }
 
 func getCollection(platform string) *bingo.Collection[Function] {
