@@ -135,6 +135,7 @@ func parseSyntaxSection(s *goquery.Selection, function *Function) {
 	// Transform the Syntax section into the desired Raw format
 	var rawBuilder strings.Builder
 
+	var section []string
 	syntaxSection.Contents().Each(func(i int, child *goquery.Selection) {
 		switch {
 		case child.Is("p"):
@@ -148,8 +149,8 @@ func parseSyntaxSection(s *goquery.Selection, function *Function) {
 				text = "`" + text + "`"
 			}
 
-			rawBuilder.WriteString(strings.TrimSpace(text))
-			rawBuilder.WriteString("\n")
+			text = strings.TrimSpace(text)
+			section = append(section, text)
 
 		case child.Is("ul"):
 			selection := child.Find("li")
@@ -158,22 +159,15 @@ func parseSyntaxSection(s *goquery.Selection, function *Function) {
 				text = strings.ReplaceAll(text, "Required", "__Required__")
 				text = strings.ReplaceAll(text, "Optional", "__Optional__")
 				text = "`" + strings.TrimSpace(item.Find("b.ocpRunInHead").Text()) + "`" + strings.ReplaceAll(text, item.Find("b.ocpRunInHead").Text(), "")
-				rawBuilder.WriteString(strings.TrimSpace(text))
-				if selection.Size() < j {
-					rawBuilder.WriteString("\n")
-				}
-			})
 
+				section = append(section, text)
+			})
 		}
 	})
 
-	// Remove any sequence of more than two newlines
-	//raw := rawBuilder.String()
-	//reg := regexp.MustCompile(`\n{3,}`)
-	//function.Syntax.Raw = reg.ReplaceAllString(raw, "\n\n")
-	function.Syntax.Raw = rawBuilder.String()
+	function.Syntax.Raw = strings.Join(section, "\n")
 
-	function.Syntax.Layout = strings.TrimSpace(syntaxSection.Find("p b.ocpLegacyBold").First().Text())
+	function.Syntax.Layout = strings.TrimSpace(syntaxSection.Find("p").First().Text())
 
 	function.Syntax.Args = []Args{}
 	syntaxSection.Find("ul > li").Each(func(i int, argItem *goquery.Selection) {
