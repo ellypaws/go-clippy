@@ -18,11 +18,25 @@ type Clippy struct {
 type Function struct {
 	Name        string   `json:"name,omitempty"`
 	Category    string   `json:"category,omitempty"`
-	Args        []string `json:"args,omitempty"`
+	Syntax      Syntax   `json:"args,omitempty"`
 	Example     string   `json:"example,omitempty"`
 	Description string   `json:"description,omitempty"`
 	URL         string   `json:"url,omitempty"`
 	SeeAlso     string   `json:"seealso,omitempty"`
+	Version     []string `json:"version,omitempty"`
+}
+
+type Syntax struct {
+	Layout string `json:"layout,omitempty"`
+	Raw    string `json:"raw,omitempty"`
+	Args   []Args `json:"args,omitempty"`
+}
+
+type Args struct {
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
+	Variadic    bool   `json:"variadic,omitempty"`
+	Optional    bool   `json:"optional,omitempty"`
 }
 
 func getCollection(platform string) *bingo.Collection[Function] {
