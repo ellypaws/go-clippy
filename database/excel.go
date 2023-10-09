@@ -29,7 +29,9 @@ import (
 //	Optional    bool   `json:"optional,omitempty"`
 //}
 
-func RecordExcel() []Function {
+type ExcelScraper struct{}
+
+func (e *ExcelScraper) Scrape() []Function {
 	doc, err := urlToDocument("https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188")
 	if err != nil {
 		return nil
@@ -57,16 +59,16 @@ func RecordExcel() []Function {
 	return functions
 }
 
-func UpdateExcelUrls(functions []Function) {
+func (e *ExcelScraper) UpdateUrls(functions []Function) {
 	for i, function := range functions {
 		if function.Syntax.Raw != "" {
 			continue
 		}
-		UpdateSingleExcelUrl(&functions[i])
+		e.UpdateSingleUrl(&functions[i])
 	}
 }
 
-func UpdateSingleExcelUrl(function *Function) {
+func (e *ExcelScraper) UpdateSingleUrl(function *Function) {
 	doc, err := urlToDocument(function.URL)
 	if err != nil {
 		return
@@ -76,7 +78,7 @@ func UpdateSingleExcelUrl(function *Function) {
 	doc.Find("#supArticleContent").Each(func(i int, s *goquery.Selection) {
 
 		// Function syntax
-		parseSyntaxSectionExcel(s, function)
+		e.parseSyntaxSectionExcel(s, function)
 
 		// Function example
 		example := s.Find("section .ocpSection h2:contains('Example')").First().Next()
@@ -109,7 +111,7 @@ func UpdateSingleExcelUrl(function *Function) {
 	})
 }
 
-func parseSyntaxSectionExcel(s *goquery.Selection, function *Function) {
+func (e *ExcelScraper) parseSyntaxSectionExcel(s *goquery.Selection, function *Function) {
 	syntaxSection := s.Find("section .ocpSection h2:contains('Syntax')").First().Parent()
 
 	// Transform the Syntax section into the desired Raw format
