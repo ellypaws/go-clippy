@@ -6,6 +6,7 @@ import (
 	"github.com/nokusukun/bingo"
 	. "go-clippy/database/clippy"
 	. "go-clippy/database/functions"
+	"log"
 	"net/http"
 )
 
@@ -28,6 +29,13 @@ func getDriver() *bingo.Driver {
 	}
 	db, _ = bingo.NewDriver(config)
 	return db
+}
+
+func Close() {
+	err := getDriver().Close()
+	if err != nil {
+		log.Fatalf("Failed to close database: %v", err)
+	}
 }
 
 func UrlToDocument(url string) (*goquery.Document, error) {

@@ -71,12 +71,15 @@ func choose() {
 		os.WriteFile("sum.json", indent, 0644)
 	case "5":
 		fmt.Println("Writing to database...")
-		fmt.Println(sliceFuncs[:1])
+		fmt.Println(sliceFuncs[:2])
 
 		// reverse slicefuncs
 		slices.Reverse(sliceFuncs)
 
 		functions.RecordMany(sliceFuncs, functions.GetCollection("excel"))
+	case "close":
+		fmt.Println("Closing driver...")
+		database.Close()
 	default:
 		SyntaxTest()
 	}
