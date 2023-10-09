@@ -305,6 +305,57 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 		})
 	},
 	"solved": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-
+		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				// Note: this isn't documented, but you can use that if you want to.
+				// This flag just allows you to create messages visible only for the caller of the command
+				// (user who triggered the command)
+				Flags:   discordgo.MessageFlagsEphemeral,
+				Content: "Bot is responding...",
+			},
+		})
+		ErrorHandler(s, i.Interaction, "This command is not implemented yet")
+		ErrorFollowup(s, i.Interaction, "Testing followup error message")
 	},
+}
+
+// ErrorFollowup sends an error message as a followup message with a deletion button.
+func ErrorFollowup(s *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+	var errorString string
+
+	switch content := errorContent.(type) {
+	case string:
+		errorString = content
+	case error:
+		errorString = fmt.Sprint(content) // Convert the error to a string
+	default:
+		errorString = "An unknown error has occurred"
+	}
+	components := []discordgo.MessageComponent{deleteButton()}
+
+	_, _ = s.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
+		Content:    errorString,
+		Components: components,
+	})
+}
+
+// ErrorHandler responds to the interaction with an error message and a deletion button.
+func ErrorHandler(s *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+	var errorString string
+
+	switch content := errorContent.(type) {
+	case string:
+		errorString = content
+	case error:
+		errorString = fmt.Sprint(content) // Convert the error to a string
+	default:
+		errorString = "An unknown error has occurred"
+	}
+	components := []discordgo.MessageComponent{deleteButton()}
+
+	_, _ = s.InteractionResponseEdit(i, &discordgo.WebhookEdit{
+		Content:    &errorString,
+		Components: &components,
+	})
 }
