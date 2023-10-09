@@ -81,6 +81,17 @@ func Record(f Function, platform string) {
 	fmt.Println("Inserted", id)
 }
 
+func RecordMany(f []Function, platform string) {
+	db := getCollection(platform)
+	id, err := db.InsertMany(f, bingo.Upsert)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, i := range id {
+		fmt.Println("Inserted", i)
+	}
+}
+
 var driver *bingo.Driver
 
 func GetDriver() (*bingo.Driver, error) {
