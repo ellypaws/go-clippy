@@ -30,9 +30,9 @@ type Function struct {
 }
 
 type Syntax struct {
-	Layout string `json:"layout,omitempty"`
-	Raw    string `json:"raw,omitempty"`
-	Args   []Args `json:"args,omitempty"`
+	Layout string          `json:"layout,omitempty"`
+	Raw    string          `json:"raw,omitempty"`
+	Args   map[string]Args `json:"args,omitempty"`
 }
 
 type Args struct {
@@ -136,7 +136,7 @@ func (f Function) Key() []byte {
 	return []byte(f.Name)
 }
 
-func urlToDocument(url string) (*goquery.Document, error) {
+func UrlToDocument(url string) (*goquery.Document, error) {
 	client := &http.Client{}
 	request, err := http.NewRequest("GET", url, nil)
 	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
