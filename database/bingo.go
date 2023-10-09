@@ -74,10 +74,11 @@ func GetFunction(s string, platform string) Function {
 
 func Record(f Function, platform string) {
 	db := getCollection(platform)
-	ir := db.Insert(f)
-	if ir.Error() != nil {
-		log.Fatal(ir.Error())
+	id, err := db.Insert(f)
+	if err != nil {
+		log.Fatal(err)
 	}
+	fmt.Println("Inserted", id)
 }
 
 var driver *bingo.Driver
