@@ -1,8 +1,11 @@
 package bingo
 
 import (
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/nokusukun/bingo"
 	"log"
+	"net/http"
 	"strings"
 )
 
@@ -119,4 +122,22 @@ func (c Clippy) Key() []byte {
 
 func (f Function) Key() []byte {
 	return []byte(f.Name)
+}
+
+func urlToDocument(url string) (*goquery.Document, error) {
+	client := &http.Client{}
+	request, err := http.NewRequest("GET", url, nil)
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Failed to request the webpage")
+		return nil, err
+	}
+	defer response.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(response.Body)
+	if err != nil {
+		fmt.Println("Failed to parse the webpage")
+		return nil, err
+	}
+	return doc, nil
 }
