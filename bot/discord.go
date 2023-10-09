@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	guildID        = flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
+	guildID        = flag.String("guild", "", "Guild ID. If not passed - bot registers commands globally")
 	botToken       = flag.String("token", "", "Bot access token")
 	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
 )
@@ -232,6 +232,29 @@ var (
 		{
 			Name:        "followups",
 			Description: "Followup messages",
+		},
+		{
+			Name:        "solved",
+			Description: "Mark a question as solved and optionally close the thread",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionUser,
+					Name:        "user-option",
+					Description: "User option",
+					Required:    false,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionChannel,
+					Name:        "channel-option",
+					Description: "Channel option",
+					// Channel type mask
+					ChannelTypes: []discordgo.ChannelType{
+						discordgo.ChannelTypeGuildText,
+						discordgo.ChannelTypeGuildVoice,
+					},
+					Required: false,
+				},
+			},
 		},
 	}
 
