@@ -32,7 +32,7 @@ import (
 type ExcelUrl string
 
 func (url *ExcelUrl) Scrape() []Function {
-	doc, err := urlToDocument(string(*url))
+	doc, err := UrlToDocument(string(*url))
 	if err != nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func (url *ExcelUrl) UpdateUrls(functions []Function) {
 }
 
 func (url *ExcelUrl) UpdateSingleUrl(function *Function) {
-	doc, err := urlToDocument(function.URL)
+	doc, err := UrlToDocument(function.URL)
 	if err != nil {
 		return
 	}
@@ -151,21 +151,64 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *Function
 
 	function.Syntax.Layout = strings.TrimSpace(syntaxSection.Find("p").First().Text())
 
-	function.Syntax.Args = []Args{}
-	syntaxSection.Find("ul > li").Each(func(i int, argItem *goquery.Selection) {
-		var arg Args
-
-		// Grab the name and primary description
-		parts := strings.SplitN(strings.TrimSpace(argItem.Find(".ocpRunInHead").First().Text()), "\u00A0", 2)
-		if len(parts) > 1 {
-			arg.Description = parts[1]
+	function.Syntax.Args = map[string]Args{}
+	if len(section) < 3 {
+		return
+	}
+	for _, line := range section[2:] {
+		// Ignore empty lines
+		if line == "" {
+			continue
 		}
 
-		// If there's an internal ul, append its text to the description
-		argItem.Find("ul li").Each(func(j int, subItem *goquery.Selection) {
-			arg.Description += "; " + strings.TrimSpace(subItem.Text())
-		})
+		line = strings.TrimSpace(line)
 
-		function.Syntax.Args = append(function.Syntax.Args, arg)
-	})
+		// Split the line into words
+		words := strings.Fields(line)
+
+		// The first word is the argument name
+		argName := strings.ToLower(words[0])
+		argName = strings.ReplaceAll(argName, "`", "")
+
+		description := strings.Join(words[2:], " ")         // The rest of the words are the description
+		description = strings.TrimPrefix(description, ". ") // Remove the ". " from the description if it exists
+
+		// Check if the argument is optional
+		optional := strings.Contains(line, "Optional")
+
+		// Check if the argument is variadic
+		variadic :=
+			strings.Contains(line, "...") ||
+				strings.Contains(line, "…") ||
+				strings.Contains(line, "-")
+
+		// Remove the backticks from the argument name
+		argName = strings.Trim(argName, "`")
+
+		// Infer type from the argName
+		infer := map[string][]string{
+			"number":  {"number", "num", "digit", "integer", "int", "float", "double", "decimal"},
+			"text":    {"text", "string", "str", "char", "character"},
+			"range":   {"range", "rng"},
+			"array":   {"array", "arr", "list", "collection", "set", "map"},
+			"boolean": {"criteria", "condition", "logical", "boolean", "bool", "true", "false"},
+		}
+		var argType string
+		for t, types := range infer {
+			for _, accepted := range types {
+				if strings.Contains(strings.ToLower(argName), accepted) {
+					argType = t
+					break
+				}
+			}
+		}
+
+		// Add the argument to the Syntax.Args map
+		function.Syntax.Args[argName] = Args{
+			Description: description,
+			Type:        argType,
+			Variadic:    variadic,
+			Optional:    optional,
+		}
+	}
 }
