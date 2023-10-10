@@ -112,7 +112,7 @@ func registerHandlers(bot *discordgo.Session) {
 			}
 		//buttons
 		case discordgo.InteractionMessageComponent:
-			if h, ok := interactionHandlers[i.MessageComponentData().CustomID]; ok {
+			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
 				h(bot, i)
 			}
 		}

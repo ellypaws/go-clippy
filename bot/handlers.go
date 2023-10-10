@@ -1,7 +1,6 @@
 package discord
 
 import (
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -30,55 +29,6 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		ErrorHandler(bot, i.Interaction, "This command is not implemented yet")
 		ErrorFollowup(bot, i.Interaction, "Testing followup error message")
 	},
-}
-
-var interactionHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
-	"delete_error_message": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		err := bot.ChannelMessageDelete(i.ChannelID, i.Message.ID)
-		if err != nil {
-			return
-		}
-	},
-}
-
-// ErrorFollowup sends an error message as a followup message with a deletion button.
-func ErrorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
-	var errorString string
-
-	switch content := errorContent.(type) {
-	case string:
-		errorString = content
-	case error:
-		errorString = fmt.Sprint(content) // Convert the error to a string
-	default:
-		errorString = "An unknown error has occurred"
-	}
-	components := []discordgo.MessageComponent{deleteButton()}
-
-	_, _ = bot.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
-		Content:    errorString,
-		Components: components,
-	})
-}
-
-// ErrorHandler responds to the interaction with an error message and a deletion button.
-func ErrorHandler(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
-	var errorString string
-
-	switch content := errorContent.(type) {
-	case string:
-		errorString = content
-	case error:
-		errorString = fmt.Sprint(content) // Convert the error to a string
-	default:
-		errorString = "An unknown error has occurred"
-	}
-	components := []discordgo.MessageComponent{deleteButton()}
-
-	_, _ = bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
-		Content:    &errorString,
-		Components: &components,
-	})
 }
 
 // ----- UNUSED COMMAND HANDLERS -----
