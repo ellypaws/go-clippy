@@ -43,7 +43,22 @@ Example:
 /lookup function:sum platform:Excel
 ```
 
-#### 2. `/solved`
+#### 2. `/search`
+
+Similar to `/lookup`, but has an autocomplete feature. You can also search by description.
+
+Usage:
+```
+/search function:FUNCTION_NAME description:DESCRIPTION platform:PLATFORM_NAME
+```
+
+Example:
+```
+/search function:sum platform:Excel
+/search description:filter platform:Google Sheets
+```
+
+#### 3. `/solved`
 
 Marks a thread as finished and optionally awards points to a user for solving it.
 
@@ -63,8 +78,9 @@ Example:
 
 ### Todo
 
-1. [ ] Leaderboard
-2. [ ] Points system
+1. [ ] Actually run the bot
+2. [ ] Leaderboard
+3. [ ] Points system
 
 
 <img src="https://go.dev/images/gophers/ladder.svg" width="48" alt="Go Gopher climbing a ladder." align="right">
