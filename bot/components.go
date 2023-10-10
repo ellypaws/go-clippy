@@ -6,7 +6,9 @@ import (
 )
 
 const (
-	deleteButton = "delete_error_message"
+	deleteButton  = "delete_error_message"
+	dismissButton = "dismiss_error_message"
+	urlButton     = "url_button"
 )
 
 var components = map[string]discordgo.MessageComponent{
@@ -15,6 +17,24 @@ var components = map[string]discordgo.MessageComponent{
 			discordgo.Button{
 				Label:    "Delete this message",
 				Style:    discordgo.DangerButton,
+				CustomID: deleteButton,
+			},
+		},
+	},
+	urlButton: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Read more",
+				Style:    discordgo.LinkButton,
+				CustomID: urlButton,
+			},
+		},
+	},
+	dismissButton: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Dismiss",
+				Style:    discordgo.SecondaryButton,
 				CustomID: deleteButton,
 			},
 		},
