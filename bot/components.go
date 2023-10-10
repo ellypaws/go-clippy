@@ -52,6 +52,9 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 
 // ErrorFollowup sends an error message as a followup message with a deletion button.
 func ErrorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+	if errorContent == nil {
+		return
+	}
 	var errorString string
 
 	switch content := errorContent.(type) {
@@ -72,6 +75,9 @@ func ErrorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorConten
 
 // ErrorHandler responds to the interaction with an error message and a deletion button.
 func ErrorHandler(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+	if errorContent == nil {
+		return
+	}
 	var errorString string
 
 	switch content := errorContent.(type) {

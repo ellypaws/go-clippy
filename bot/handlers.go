@@ -8,15 +8,41 @@ import (
 
 var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
 	helloCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Hey there! Congratulations, you just executed your first slash command",
-			},
-		})
+		responses[helloResponse].(regularResponseType)(bot, i)
 	},
 	solvedCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		responses[pendingResponse].(regularResponseType)(bot, i)
+		responses[errorResponse].(errorResponseType)(bot, i, "This command is not implemented yet")
+		responses[errorFollowup].(errorResponseType)(bot, i, "Testing followup error message")
+	},
+	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+
+		responses[ephemeralResponse].(regularResponseType)(bot, i)
+		responses[thinkResponse].(regularResponseType)(bot, i)
+	},
+}
+
+const (
+	thinkResponse = iota
+	pendingResponse
+	ephemeralResponse
+	helloResponse
+	errorResponse
+	errorFollowup
+)
+
+type regularResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
+type errorResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate, errorContent any)
+
+var responses = map[int]any{
+	thinkResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseType(i.ApplicationCommandData().Options[0].IntValue()),
+		})
+		ErrorHandler(bot, i.Interaction, err)
+	},
+	pendingResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				// Note: this isn't documented, but you can use that if you want to.
@@ -26,9 +52,31 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 				Content: "Bot is responding...",
 			},
 		})
-		ErrorHandler(bot, i.Interaction, "This command is not implemented yet")
-		ErrorFollowup(bot, i.Interaction, "Testing followup error message")
+		ErrorHandler(bot, i.Interaction, err)
 	},
+	ephemeralResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				// Note: this isn't documented, but you can use that if you want to.
+				// This flag just allows you to create messages visible only for the caller of the command
+				// (user who triggered the command)
+				Flags:   discordgo.MessageFlagsEphemeral,
+				Content: "Bot is responding...",
+			},
+		})
+		ErrorHandler(bot, i.Interaction, err)
+	},
+	helloResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Hey there! Congratulations, you just executed your first slash command",
+			},
+		})
+	},
+	errorResponse: ErrorHandler,
+	errorFollowup: ErrorFollowup,
 }
 
 // ----- UNUSED COMMAND HANDLERS -----
