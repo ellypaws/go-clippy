@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 )
 
 var (
@@ -14,52 +15,43 @@ var (
 	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
 )
 
-var s *discordgo.Session
-
-func init() { flag.Parse() }
-
-func init() {
-	var err error
-	s, err = discordgo.New("Bot " + *botToken)
-	if err != nil {
-		log.Fatalf("Invalid bot parameters: %v", err)
-	}
-}
-
 var (
 	integerOptionMinValue          = 1.0
 	dmPermission                   = false
 	defaultMemberPermissions int64 = discordgo.PermissionManageServer
 )
 
+var (
+	bot                *discordgo.Session
+	registeredCommands map[string]*discordgo.ApplicationCommand
+)
+
+func init() { flag.Parse() }
+
 func init() {
-	s.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-			h(s, i)
-		}
-	})
+	var err error
+	bot, err = GetBot()
+	if err != nil {
+		log.Fatalf("Invalid bot parameters: %v", err)
+	}
+}
+
+func GetBot() (*discordgo.Session, error) {
+	if bot != nil {
+		return bot, nil
+	}
+	return discordgo.New("Bot " + *botToken)
 }
 
 func Run() {
-	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-	})
-	err := s.Open()
+	registerHandlers(bot)
+	err := bot.Open()
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
+	registerCommands(bot)
 
-	log.Println("Adding commands...")
-	registeredCommands := make([]*discordgo.ApplicationCommand, len(commands))
-	for i, v := range commands {
-		cmd, err := s.ApplicationCommandCreate(s.State.User.ID, *guildID, v)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Name, err)
-		}
-		registeredCommands[i] = cmd
-	}
-
-	defer s.Close()
+	defer bot.Close()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
@@ -78,7 +70,7 @@ func Run() {
 		// }
 
 		for _, v := range registeredCommands {
-			err := s.ApplicationCommandDelete(s.State.User.ID, *guildID, v.ID)
+			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, v.ID)
 			if err != nil {
 				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
 			}
@@ -86,4 +78,51 @@ func Run() {
 	}
 
 	log.Println("Gracefully shutting down.")
+}
+
+func registerHandlers(bot *discordgo.Session) {
+	bot.AddHandler(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		switch i.Type {
+		// commands
+		case discordgo.InteractionApplicationCommand:
+			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
+				h(bot, i)
+			}
+		//buttons
+		case discordgo.InteractionMessageComponent:
+			if h, ok := interactionHandlers[i.MessageComponentData().CustomID]; ok {
+				h(bot, i)
+			}
+		}
+	})
+	bot.AddHandler(func(bot *discordgo.Session, r *discordgo.Ready) {
+		log.Printf("Logged in as: %v#%v", bot.State.User.Username, bot.State.User.Discriminator)
+	})
+}
+
+func registerCommands(bot *discordgo.Session) {
+	log.Println("Adding commands...")
+	registeredCommands = make(map[string]*discordgo.ApplicationCommand, len(commands))
+	for key, command := range commands {
+		if command.Name == "" {
+			// clean the key because it might be a description of some sort
+			// only get the first word, and clean to only alphanumeric characters or -
+			sanitized := strings.ReplaceAll(key, " ", "-")
+			sanitized = strings.ToLower(sanitized)
+
+			// remove all non valid characters
+			for _, c := range sanitized {
+				if (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
+					sanitized = strings.ReplaceAll(sanitized, string(c), "")
+				}
+			}
+			command.Name = sanitized
+		}
+		cmd, err := bot.ApplicationCommandCreate(bot.State.User.ID, *guildID, command)
+		if err != nil {
+			log.Panicf("Cannot create '%v' command: %v", command.Name, err)
+		}
+		registeredCommands[key] = cmd
+	}
+
 }

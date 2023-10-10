@@ -10,17 +10,17 @@ import (
 
 // Available methods for *discordgo.Session:
 
-var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-	"hello": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
+	"hello": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "Hey there! Congratulations, you just executed your first slash command",
 			},
 		})
 	},
-	"basic-command-with-files": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	"basic-command-with-files": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "Hey there! Congratulations, you just executed your first slash command with a file in the response",
@@ -34,7 +34,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			},
 		})
 	},
-	"localized-command": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	"localized-command": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses := map[discordgo.Locale]string{
 			discordgo.ChineseCN: "你好！ 这是一个本地化的命令",
 		}
@@ -42,7 +42,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 		if r, ok := responses[i.Locale]; ok {
 			response = r
 		}
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: response,
@@ -52,7 +52,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			panic(err)
 		}
 	},
-	"options": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	"options": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Access options in the order provided by the user.
 		options := i.ApplicationCommandData().Options
 
@@ -76,7 +76,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			margs = append(margs, option.StringValue())
 			msgformat += "> string-option: %s\n"
 		}
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			// Ignore type for now, they will be discussed in "responses"
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -87,12 +87,12 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			},
 		})
 	},
-	"permission-overview": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		perms, err := s.ApplicationCommandPermissions(s.State.User.ID, i.GuildID, i.ApplicationCommandData().ID)
+	"permission-overview": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		perms, err := bot.ApplicationCommandPermissions(bot.State.User.ID, i.GuildID, i.ApplicationCommandData().ID)
 
 		var restError *discordgo.RESTError
 		if errors.As(err, &restError) && restError.Message != nil && restError.Message.Code == discordgo.ErrCodeUnknownApplicationCommandPermissions {
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: ":x: No permission overwrites",
@@ -138,7 +138,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			}
 		}
 
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Embeds: []*discordgo.MessageEmbed{
@@ -165,7 +165,7 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			},
 		})
 	},
-	"subcommands": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	"subcommands": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		options := i.ApplicationCommandData().Options
 		content := ""
 
@@ -185,14 +185,14 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			}
 		}
 
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: content,
 			},
 		})
 	},
-	"responses": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	"responses": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Responses to a command are very important.
 		// First of all, because you need to react to the interaction
 		// by sending the response in 3 seconds after receiving, otherwise
@@ -210,22 +210,22 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			content +=
 				"\nAlso... you can edit your response, wait 5 seconds and this message will be changed"
 		case int64(discordgo.InteractionResponseDeferredChannelMessageWithSource):
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseType(i.ApplicationCommandData().Options[0].IntValue()),
 			})
 			if err != nil {
-				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong 01",
 				})
 			}
 			time.AfterFunc(time.Second*5, func() {
 				content = "Now we're responding after 5 seconds of waiting. "
 
-				_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				_, err = bot.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 					Content: &content,
 				})
 				if err != nil {
-					s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+					bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 						Content: "Something went wrong 02",
 					})
 					return
@@ -234,14 +234,14 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			return
 		}
 
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseType(i.ApplicationCommandData().Options[0].IntValue()),
 			Data: &discordgo.InteractionResponseData{
 				Content: content,
 			},
 		})
 		if err != nil {
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+			bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: "Something went wrong",
 			})
 			return
@@ -250,25 +250,25 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 			content := content + "\n\nWell, now you know how to create and edit responses. " +
 				"But you still don't know how to delete them... so... wait 10 seconds and this " +
 				"message will be deleted."
-			_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+			_, err = bot.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 				Content: &content,
 			})
 			if err != nil {
-				s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+				bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 					Content: "Something went wrong",
 				})
 				return
 			}
 			time.Sleep(time.Second * 10)
-			s.InteractionResponseDelete(i.Interaction)
+			bot.InteractionResponseDelete(i.Interaction)
 		})
 	},
-	"followups": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	"followups": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		// Followup messages are basically regular messages (you can create as many of them as you wish)
 		// but work as they are created by webhooks and their functionality
 		// is for handling additional messages after sending a response.
 
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				// Note: this isn't documented, but you can use that if you want to.
@@ -278,11 +278,11 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 				Content: "Surprise!",
 			},
 		})
-		msg, err := s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		msg, err := bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 			Content: "Followup message has been created, after 5 seconds it will be edited",
 		})
 		if err != nil {
-			s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+			bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 				Content: "Something went wrong",
 			})
 			return
@@ -290,38 +290,47 @@ var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.Interac
 		time.Sleep(time.Second * 5)
 
 		content := "Now the original message is gone and after 10 seconds this message will ~~self-destruct~~ be deleted."
-		s.FollowupMessageEdit(i.Interaction, msg.ID, &discordgo.WebhookEdit{
+		bot.FollowupMessageEdit(i.Interaction, msg.ID, &discordgo.WebhookEdit{
 			Content: &content,
 		})
 
 		time.Sleep(time.Second * 10)
 
-		s.FollowupMessageDelete(i.Interaction, msg.ID)
+		bot.FollowupMessageDelete(i.Interaction, msg.ID)
 
-		s.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
+		bot.FollowupMessageCreate(i.Interaction, true, &discordgo.WebhookParams{
 			Content: "For those, who didn't skip anything and followed tutorial along fairly, " +
 				"take a unicorn :unicorn: as reward!\n" +
 				"Also, as bonus... look at the original interaction response :D",
 		})
 	},
-	"solved": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	"solved": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				// Note: this isn't documented, but you can use that if you want to.
 				// This flag just allows you to create messages visible only for the caller of the command
 				// (user who triggered the command)
-				Flags:   discordgo.MessageFlagsEphemeral,
+				//Flags:   discordgo.MessageFlagsEphemeral,
 				Content: "Bot is responding...",
 			},
 		})
-		ErrorHandler(s, i.Interaction, "This command is not implemented yet")
-		ErrorFollowup(s, i.Interaction, "Testing followup error message")
+		ErrorHandler(bot, i.Interaction, "This command is not implemented yet")
+		ErrorFollowup(bot, i.Interaction, "Testing followup error message")
+	},
+}
+
+var interactionHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
+	"delete_error_message": func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		err := bot.ChannelMessageDelete(i.ChannelID, i.Message.ID)
+		if err != nil {
+			return
+		}
 	},
 }
 
 // ErrorFollowup sends an error message as a followup message with a deletion button.
-func ErrorFollowup(s *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+func ErrorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
 	var errorString string
 
 	switch content := errorContent.(type) {
@@ -334,14 +343,14 @@ func ErrorFollowup(s *discordgo.Session, i *discordgo.Interaction, errorContent 
 	}
 	components := []discordgo.MessageComponent{deleteButton()}
 
-	_, _ = s.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
+	_, _ = bot.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
 		Content:    errorString,
 		Components: components,
 	})
 }
 
 // ErrorHandler responds to the interaction with an error message and a deletion button.
-func ErrorHandler(s *discordgo.Session, i *discordgo.Interaction, errorContent any) {
+func ErrorHandler(bot *discordgo.Session, i *discordgo.Interaction, errorContent any) {
 	var errorString string
 
 	switch content := errorContent.(type) {
@@ -354,7 +363,7 @@ func ErrorHandler(s *discordgo.Session, i *discordgo.Interaction, errorContent a
 	}
 	components := []discordgo.MessageComponent{deleteButton()}
 
-	_, _ = s.InteractionResponseEdit(i, &discordgo.WebhookEdit{
+	_, _ = bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
 		Content:    &errorString,
 		Components: &components,
 	})
