@@ -131,7 +131,9 @@ func registerHandlers(bot *discordgo.Session) {
 			}
 		//buttons
 		case discordgo.InteractionMessageComponent:
+			log.Printf("Button with customID `%v` was pressed, attempting to respond\n", i.MessageComponentData().CustomID)
 			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
+				log.Println("Handler found, executing")
 				h(bot, i)
 			}
 		}
@@ -165,5 +167,4 @@ func registerCommands(bot *discordgo.Session) {
 		registeredCommands[key] = cmd
 		log.Println("Registered command:", cmd.Name, cmd.ID)
 	}
-
 }
