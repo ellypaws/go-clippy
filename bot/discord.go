@@ -64,6 +64,7 @@ func Run() {
 	if *cleanCommands {
 		commandsToRemove, _ := bot.ApplicationCommands(*botToken, *guildID)
 		for _, command := range commandsToRemove {
+			log.Println("Removing commands:", command.Name)
 			err := bot.ApplicationCommandDelete(*botToken, *guildID, command.ID)
 			if err != nil {
 				log.Fatalf("Cannot delete '%v' command: %v", command.Name, err)
@@ -90,11 +91,11 @@ func Run() {
 		// 	log.Fatalf("Could not fetch registered commands: %v", err)
 		// }
 
-		for _, v := range registeredCommands {
-			log.Println("Removing commands:", registeredCommands)
-			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, v.ID)
+		for _, command := range registeredCommands {
+			log.Println("Removing commands:", command.Name)
+			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, command.ID)
 			if err != nil {
-				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
+				log.Panicf("Cannot delete '%v' command: %v", command.Name, err)
 			}
 		}
 	}
