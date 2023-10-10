@@ -81,7 +81,6 @@ func Run() {
 	<-stop
 
 	if *removeCommands {
-		log.Println("Removing commands...")
 		// // We need to fetch the commands, since deleting requires the command ID.
 		// // We are doing this from the returned commands on line 375, because using
 		// // this will delete all the commands, which might not be desirable, so we
@@ -92,6 +91,7 @@ func Run() {
 		// }
 
 		for _, v := range registeredCommands {
+			log.Println("Removing commands:", registeredCommands)
 			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, v.ID)
 			if err != nil {
 				log.Panicf("Cannot delete '%v' command: %v", v.Name, err)
