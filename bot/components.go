@@ -64,6 +64,7 @@ func ErrorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorConten
 		errorString = fmt.Sprint(content) // Convert the error to a string
 	default:
 		errorString = "An unknown error has occurred"
+		errorString += "\nReceived:" + fmt.Sprint(content)
 	}
 	components := []discordgo.MessageComponent{components[deleteButton]}
 
@@ -87,6 +88,7 @@ func ErrorHandler(bot *discordgo.Session, i *discordgo.Interaction, errorContent
 		errorString = fmt.Sprint(content) // Convert the error to a string
 	default:
 		errorString = "An unknown error has occurred"
+		errorString += "\nReceived:" + fmt.Sprint(content)
 	}
 	components := []discordgo.MessageComponent{components[deleteButton]}
 

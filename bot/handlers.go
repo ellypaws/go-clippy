@@ -33,7 +33,7 @@ const (
 
 type regularResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
 type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction)
-type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent any)
+type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent ...any)
 type followupResponseType editResponseType
 
 var responses = map[int]any{
@@ -56,7 +56,7 @@ var responses = map[int]any{
 		})
 		ErrorHandler(bot, i.Interaction, err)
 	}),
-	ephemeralResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	ephemeralResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -68,8 +68,8 @@ var responses = map[int]any{
 			},
 		})
 		ErrorHandler(bot, i.Interaction, err)
-	},
-	helloResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	}),
+	helloResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -77,9 +77,9 @@ var responses = map[int]any{
 			},
 		})
 		ErrorHandler(bot, i.Interaction, err)
-	},
-	errorResponse: ErrorHandler,
-	errorFollowup: ErrorFollowup,
+	}),
+	errorResponse: errorResponseType(ErrorHandler),
+	errorFollowup: errorResponseType(ErrorFollowup),
 }
 
 // ----- UNUSED COMMAND HANDLERS -----
