@@ -12,6 +12,13 @@ const (
 	maskedChannel
 )
 
+const (
+	helloCommand    = "hello"
+	solvedCommand   = "solved"
+	functionCommand = "function"
+	searchCommand   = "search"
+)
+
 var commandOptions = map[int]*discordgo.ApplicationCommandOption{
 	requiredFunction: {
 		Type:        discordgo.ApplicationCommandOptionString,
@@ -72,31 +79,31 @@ var maskedOptions = map[int]*discordgo.ApplicationCommandOption{
 }
 
 var commands = map[string]*discordgo.ApplicationCommand{
-	"Saying hello": {
-		Name: "hello",
+	helloCommand: {
+		Name: helloCommand,
 		// All commands and options must have a description
 		// Commands/options without description will fail the registration
 		// of the command.
 		Description: "Say hello to the bot",
 	},
-	"/solved": {
-		Name:        "solved",
+	solvedCommand: {
+		Name:        solvedCommand,
 		Description: "Mark a question as solved and optionally close the thread",
 		Options: []*discordgo.ApplicationCommandOption{
 			maskedOptions[maskedUser],
 			maskedOptions[maskedChannel],
 		},
 	},
-	"/function": {
-		Name:        "function",
+	functionCommand: {
+		Name:        functionCommand,
 		Description: "Look up a function in Excel or Google Sheets",
 		Options: []*discordgo.ApplicationCommandOption{
 			commandOptions[requiredFunction],
 			commandOptions[optionalPlatformSelection],
 		},
 	},
-	"/search": {
-		Name:        "search",
+	searchCommand: {
+		Name:        searchCommand,
 		Description: "Showcase of multiple autocomplete option",
 		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
