@@ -12,8 +12,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 	},
 	solvedCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses[pendingResponse].(regularResponseType)(bot, i)
-		responses[errorResponse].(errorResponseType)(bot, i, "This command is not implemented yet")
-		responses[errorFollowup].(errorResponseType)(bot, i, "Testing followup error message")
+		responses[errorResponse].(errorResponseType)(bot, i.Interaction, "This command is not implemented yet")
+		responses[errorFollowup].(errorResponseType)(bot, i.Interaction, "Testing followup error message")
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
@@ -32,7 +32,9 @@ const (
 )
 
 type regularResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
-type errorResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate, errorContent any)
+type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction)
+type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent any)
+type followupResponseType editResponseType
 
 var responses = map[int]any{
 	thinkResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -41,7 +43,7 @@ var responses = map[int]any{
 		})
 		ErrorHandler(bot, i.Interaction, err)
 	},
-	pendingResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	pendingResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -53,7 +55,7 @@ var responses = map[int]any{
 			},
 		})
 		ErrorHandler(bot, i.Interaction, err)
-	},
+	}),
 	ephemeralResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -68,12 +70,13 @@ var responses = map[int]any{
 		ErrorHandler(bot, i.Interaction, err)
 	},
 	helloResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "Hey there! Congratulations, you just executed your first slash command",
 			},
 		})
+		ErrorHandler(bot, i.Interaction, err)
 	},
 	errorResponse: ErrorHandler,
 	errorFollowup: ErrorFollowup,
