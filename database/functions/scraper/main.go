@@ -1,11 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	discord "go-clippy/bot"
 	"go-clippy/database"
 	"go-clippy/database/functions"
+	"log"
 	"os"
 	"slices"
 )
@@ -37,7 +39,9 @@ func choose() {
 	case "2":
 		fmt.Println("Recording Excel functions...")
 		sliceFuncs = excelUrl.Scrape()
-		fmt.Printf("%+v\n", sliceFuncs)
+		for _, function := range sliceFuncs[:min(100, len(sliceFuncs))] {
+			log.Printf("%+v\n", function.Name)
+		}
 	case "2.1":
 		fmt.Println("Updating Excel function URLs...")
 		if sliceFuncs == nil {
@@ -71,12 +75,26 @@ func choose() {
 		os.WriteFile("sum.json", indent, 0644)
 	case "5":
 		fmt.Println("Writing to database...")
-		fmt.Println(sliceFuncs[:2])
 
 		// reverse slicefuncs
 		slices.Reverse(sliceFuncs)
 
-		functions.RecordMany(sliceFuncs, functions.GetCollection("excel"))
+		// sort the slice by alphabetical order in a.Name
+		slices.SortStableFunc(sliceFuncs, func(a, b functions.Function) int {
+			if n := cmp.Compare(a.Name, b.Name); n != 0 {
+				return n
+			}
+			return cmp.Compare(a.Syntax.Layout, a.Syntax.Layout)
+		})
+
+		log.Printf("Is this sorted?")
+		for _, function := range sliceFuncs[:min(25, len(sliceFuncs))] {
+			log.Printf("%+v\n", function.Name)
+		}
+
+		for _, function := range sliceFuncs {
+			function.Record(functions.GetCollection("excel"))
+		}
 	case "close":
 		fmt.Println("Closing driver...")
 		database.Close()
