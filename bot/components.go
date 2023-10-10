@@ -11,6 +11,11 @@ const (
 	deleteButton  = "delete_error_message"
 	dismissButton = "dismiss_error_message"
 	urlButton     = "url_button"
+
+	readmoreDismiss = "readmore_dismiss"
+
+	paginationButton = "pagination_button"
+	okCancelButtons  = "ok_cancel_buttons"
 )
 
 var components = map[string]discordgo.MessageComponent{
@@ -38,6 +43,50 @@ var components = map[string]discordgo.MessageComponent{
 				Label:    "Dismiss",
 				Style:    discordgo.SecondaryButton,
 				CustomID: deleteButton,
+			},
+		},
+	},
+
+	readmoreDismiss: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Read more",
+				Style:    discordgo.LinkButton,
+				CustomID: urlButton,
+			},
+			discordgo.Button{
+				Label:    "Dismiss",
+				Style:    discordgo.SecondaryButton,
+				CustomID: deleteButton,
+			},
+		},
+	},
+
+	paginationButton: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Previous",
+				Style:    discordgo.SecondaryButton,
+				CustomID: paginationButton + "_previous",
+			},
+			discordgo.Button{
+				Label:    "Next",
+				Style:    discordgo.SecondaryButton,
+				CustomID: paginationButton + "_next",
+			},
+		},
+	},
+	okCancelButtons: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "OK",
+				Style:    discordgo.SuccessButton,
+				CustomID: okCancelButtons + "_ok",
+			},
+			discordgo.Button{
+				Label:    "Cancel",
+				Style:    discordgo.DangerButton,
+				CustomID: okCancelButtons + "_cancel",
 			},
 		},
 	},
