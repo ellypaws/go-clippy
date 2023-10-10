@@ -14,6 +14,7 @@ var (
 	botToken       = flag.String("token", "", "Bot access token")
 	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
 	cleanCommands  = flag.Bool("clcmd", false, "Remove all commands before starting")
+	printFlags     = flag.Bool("printflags", false, "Print all flags")
 )
 
 var (
@@ -36,14 +37,23 @@ func init() {
 			botToken = &tokenEnv
 		}
 	}
+
+	if *printFlags {
+		log.Printf("Guild ID: %v", *guildID)
+		log.Printf("Bot Token: %v", *botToken)
+		log.Printf("Remove Commands: %v", *removeCommands)
+		log.Printf("Clean Commands: %v", *cleanCommands)
+	}
 }
 
 func init() {
 	var err error
+	log.Println("Initializing bot...")
 	bot, err = GetBot()
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
+	log.Println("Bot initialized:", bot)
 }
 
 func GetBot() (*discordgo.Session, error) {
@@ -62,16 +72,24 @@ func Run() {
 
 	// remove all commands at startup when -clcmd flag is passed
 	if *cleanCommands {
-		commandsToRemove, _ := bot.ApplicationCommands(*botToken, *guildID)
+		log.Println("Removing all commands...")
+
+		commandsToRemove, _ := bot.ApplicationCommands(bot.State.User.ID, *guildID)
+		if len(commandsToRemove) == 0 {
+			log.Println("No commands to remove")
+		}
 		for _, command := range commandsToRemove {
-			log.Println("Removing commands:", command.Name)
-			err := bot.ApplicationCommandDelete(*botToken, *guildID, command.ID)
+			log.Printf("Attempting to remove '%v' command...", command.Name)
+			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, command.ID)
 			if err != nil {
-				log.Fatalf("Cannot delete '%v' command: %v", command.Name, err)
+				log.Println("Cannot delete '%v' command: %v", command.Name, err)
+				continue
 			}
+			log.Print("... success! ", command.ID)
 		}
 	}
 
+	log.Println("Adding commands...")
 	registerCommands(bot)
 
 	defer bot.Close()
@@ -124,7 +142,6 @@ func registerHandlers(bot *discordgo.Session) {
 }
 
 func registerCommands(bot *discordgo.Session) {
-	log.Println("Adding commands...")
 	registeredCommands = make(map[string]*discordgo.ApplicationCommand, len(commands))
 	for key, command := range commands {
 		if command.Name == "" {
@@ -146,6 +163,7 @@ func registerCommands(bot *discordgo.Session) {
 			log.Panicf("Cannot create '%v' command: %v", command.Name, err)
 		}
 		registeredCommands[key] = cmd
+		log.Println("Registered command:", cmd.Name, cmd.ID)
 	}
 
 }
