@@ -8,45 +8,54 @@ import (
 
 var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
 	helloCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		responses[helloResponse].(regularResponseType)(bot, i)
+		responses[helloResponse].(newResponseType)(bot, i)
 	},
 	solvedCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		responses[pendingResponse].(regularResponseType)(bot, i)
+		responses[pendingResponse].(newResponseType)(bot, i)
 		responses[ErrorResponse].(errorResponseType)(bot, i.Interaction, "This command is not implemented yet")
 		responses[ErrorFollowup].(errorResponseType)(bot, i.Interaction, "Testing followup error message")
+
+		responses[awardClippy].(newResponseType)(bot, i)
+		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding clippy to <@"+i.Member.User.ID+">")
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
-		responses[ephemeralResponse].(regularResponseType)(bot, i)
-		responses[thinkResponse].(regularResponseType)(bot, i)
+		responses[thinkResponse].(newResponseType)(bot, i)
+		responses[ephemeralResponse].(newResponseType)(bot, i)
 	},
 }
 
 const (
 	thinkResponse = iota
 	pendingResponse
+	messageResponse
+	followupResponse
 	ephemeralResponse
+	ephemeralContentResponse
 	helloResponse
 	ErrorResponse
 	ErrorFollowup
 	ErrorEphemeral
+
+	awardClippy
 )
 
-type regularResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
+type newResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
 type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction)
-type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent ...any)
 type followupResponseType editResponseType
+type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent ...any)
+type msgResponseType errorResponseType
 
 var responses = map[int]any{
-	thinkResponse: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	thinkResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseType(i.ApplicationCommandData().Options[0].IntValue()),
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
 		if err != nil {
-			errorEdit(bot, i.Interaction, err)
+			errorEphemeral(bot, i.Interaction, err)
 		}
-	},
-	pendingResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	}),
+	pendingResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -61,7 +70,33 @@ var responses = map[int]any{
 			errorEdit(bot, i.Interaction, err)
 		}
 	}),
-	ephemeralResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	messageResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+		err := bot.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: message[0].(string),
+			},
+		})
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+	}),
+	followupResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+		var webhookParams *discordgo.WebhookParams
+		for _, m := range message {
+			switch content := m.(type) {
+			case string:
+				webhookParams.Content = content
+			case discordgo.MessageComponent:
+				webhookParams.Components = append(webhookParams.Components, content)
+			}
+		}
+		err, _ := bot.FollowupMessageCreate(i, true, webhookParams)
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+	}),
+	ephemeralResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -76,7 +111,22 @@ var responses = map[int]any{
 			errorEdit(bot, i.Interaction, err)
 		}
 	}),
-	helloResponse: regularResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	ephemeralContentResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+		err := bot.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				// Note: this isn't documented, but you can use that if you want to.
+				// This flag just allows you to create messages visible only for the caller of the command
+				// (user who triggered the command)
+				Flags:   discordgo.MessageFlagsEphemeral,
+				Content: message[0].(string),
+			},
+		})
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+	}),
+	helloResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -86,6 +136,9 @@ var responses = map[int]any{
 		if err != nil {
 			errorEdit(bot, i.Interaction, err)
 		}
+	}),
+	awardClippy: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+
 	}),
 	ErrorResponse:  errorResponseType(errorEdit),
 	ErrorFollowup:  errorResponseType(errorFollowup),
