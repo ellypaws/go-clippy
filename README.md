@@ -79,8 +79,9 @@ Example:
 ### Todo
 
 1. [ ] Actually run the bot
-2. [ ] Leaderboard
-3. [ ] Points system
+2. [ ] Implement [bubbletea](https://github.com/charmbracelet/bubbletea.git) TUI
+3. [ ] Leaderboard
+4. [ ] Points system
 
 
 <img src="https://go.dev/images/gophers/ladder.svg" width="48" alt="Go Gopher climbing a ladder." align="right">
