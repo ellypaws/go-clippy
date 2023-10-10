@@ -13,6 +13,7 @@ var (
 	guildID        = flag.String("guild", "", "Guild ID. If not passed - bot registers commands globally")
 	botToken       = flag.String("token", "", "Bot access token")
 	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
+	cleanCommands  = flag.Bool("clcmd", false, "Remove all commands before starting")
 )
 
 var (
@@ -27,6 +28,15 @@ var (
 )
 
 func init() { flag.Parse() }
+
+func init() {
+	if botToken == nil || *botToken == "" {
+		tokenEnv := os.Getenv("token")
+		if tokenEnv != "" {
+			botToken = &tokenEnv
+		}
+	}
+}
 
 func init() {
 	var err error
@@ -49,6 +59,18 @@ func Run() {
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
+
+	// remove all commands at startup when -clcmd flag is passed
+	if *cleanCommands {
+		commandsToRemove, _ := bot.ApplicationCommands(*botToken, *guildID)
+		for _, command := range commandsToRemove {
+			err := bot.ApplicationCommandDelete(*botToken, *guildID, command.ID)
+			if err != nil {
+				log.Fatalf("Cannot delete '%v' command: %v", command.Name, err)
+			}
+		}
+	}
+
 	registerCommands(bot)
 
 	defer bot.Close()
