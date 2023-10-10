@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"time"
 )
 
 // Available methods for *discordgo.Session:
@@ -21,7 +22,9 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		responses[thinkResponse].(newResponseType)(bot, i)
-		responses[ephemeralResponse].(newResponseType)(bot, i)
+		responses[editResponse].(msgResponseType)(bot, i.Interaction, "Testing editing response")
+		time.Sleep(time.Second * 5)
+		responses[editResponse].(msgResponseType)(bot, i.Interaction, "Now with a button", components[deleteButton])
 	},
 }
 
@@ -30,9 +33,14 @@ const (
 	pendingResponse
 	messageResponse
 	followupResponse
-	ephemeralResponse
+
+	editResponse
+
+	ephemeralBotIsResponding
 	ephemeralContentResponse
+
 	helloResponse
+
 	ErrorResponse
 	ErrorFollowup
 	ErrorEphemeral
@@ -43,8 +51,8 @@ const (
 type newResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
 type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction)
 type followupResponseType editResponseType
-type errorResponseType func(bot *discordgo.Session, i *discordgo.Interaction, errorContent ...any)
-type msgResponseType errorResponseType
+type msgResponseType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any)
+type errorResponseType msgResponseType
 
 var responses = map[int]any{
 	thinkResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -82,7 +90,7 @@ var responses = map[int]any{
 		}
 	}),
 	followupResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
-		var webhookParams *discordgo.WebhookParams
+		webhookParams := discordgo.WebhookParams{}
 		for _, m := range message {
 			switch content := m.(type) {
 			case string:
@@ -91,12 +99,32 @@ var responses = map[int]any{
 				webhookParams.Components = append(webhookParams.Components, content)
 			}
 		}
-		err, _ := bot.FollowupMessageCreate(i, true, webhookParams)
+		err, _ := bot.FollowupMessageCreate(i, true, &webhookParams)
 		if err != nil {
 			errorFollowup(bot, i, err)
 		}
 	}),
-	ephemeralResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+
+	editResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+		webhookParams := discordgo.WebhookParams{}
+		for _, m := range message {
+			switch content := m.(type) {
+			case string:
+				webhookParams.Content = content
+			case discordgo.MessageComponent:
+				webhookParams.Components = append(webhookParams.Components, content)
+			}
+		}
+		err, _ := bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
+			Content:    &webhookParams.Content,
+			Components: &webhookParams.Components,
+		})
+		if err != nil {
+			errorEphemeral(bot, i, err)
+		}
+	}),
+
+	ephemeralBotIsResponding: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -126,6 +154,7 @@ var responses = map[int]any{
 			errorFollowup(bot, i, err)
 		}
 	}),
+
 	helloResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
