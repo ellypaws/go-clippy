@@ -25,6 +25,24 @@ To run the bot, you need the Bot token from the [Discord Developer Portal](https
 go-clippy.exe -token YOUR_BOT_ACCESS_TOKEN
 ```
 
+The token can also be set by setting the `token` environment variable.
+
+| Platform       | Command                    |
+|----------------|----------------------------|
+| Powershell     | `$env:token = "BOT_TOKEN"` |
+| Bash           | `export token=BOT_TOKEN`   |
+| Command Prompt | `set token=BOT_TOKEN`      |
+
+### Running the bot
+
+Once the bot is running, you can use the following commands to interact with it:
+
+   | Key                            | Action           |
+   |--------------------------------|------------------|
+   | <kbd>Ctrl</kbd> + <kbd>C</kbd> | Quit the program |
+
+1. [ ] TUI to be implemented
+
 ### Slash Commands
 
 The bot supports a variety of slash commands to ease the functionality:
