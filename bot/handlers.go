@@ -22,9 +22,18 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		responses[thinkResponse].(newResponseType)(bot, i)
-		responses[editResponse].(msgResponseType)(bot, i.Interaction, "Testing editing response")
-		time.Sleep(time.Second * 5)
-		responses[editResponse].(msgResponseType)(bot, i.Interaction, "Now with a button", components[deleteButton])
+		responses[editResponse].(msgReturnType)(bot, i.Interaction, "Testing editing response")
+		time.Sleep(time.Second * 2)
+		responses[editResponse].(msgReturnType)(bot, i.Interaction, "Now with a button", components[okCancelButtons])
+
+		msg := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Testing followup message", components[paginationButtons])
+		time.Sleep(time.Second * 2)
+		responses[followupEdit].(editResponseType)(bot, i.Interaction, msg, "Editing followup message")
+	},
+
+	searchCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		responses[thinkResponse].(newResponseType)(bot, i)
+		responses[messageResponse].(msgResponseType)(bot, i.Interaction, "Searching for "+i.ApplicationCommandData().Options[0].StringValue()+"...")
 	},
 }
 
@@ -32,7 +41,9 @@ const (
 	thinkResponse = iota
 	pendingResponse
 	messageResponse
+
 	followupResponse
+	followupEdit
 
 	editResponse
 
@@ -49,9 +60,9 @@ const (
 )
 
 type newResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
-type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction)
-type followupResponseType editResponseType
+type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction, messageToEdit *discordgo.Message, content ...any) *discordgo.Message
 type msgResponseType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any)
+type msgReturnType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message
 type errorResponseType msgResponseType
 
 var responses = map[int]any{
@@ -89,7 +100,7 @@ var responses = map[int]any{
 			errorFollowup(bot, i, err)
 		}
 	}),
-	followupResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+	followupResponse: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) *discordgo.Message {
 		webhookParams := discordgo.WebhookParams{}
 		for _, m := range message {
 			switch content := m.(type) {
@@ -99,15 +110,48 @@ var responses = map[int]any{
 				webhookParams.Components = append(webhookParams.Components, content)
 			}
 		}
-		err, _ := bot.FollowupMessageCreate(i, true, &webhookParams)
+		msg, err := bot.FollowupMessageCreate(i, true, &webhookParams)
 		if err != nil {
 			errorFollowup(bot, i, err)
 		}
+		return msg
 	}),
 
-	editResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+	followupEdit: editResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message *discordgo.Message, content ...any) *discordgo.Message {
+		webhookEdit := discordgo.WebhookEdit{}
+		var newEmbeds []*discordgo.MessageEmbed
+		var newComponents []discordgo.MessageComponent
+		for _, m := range content {
+			switch content := m.(type) {
+			case *discordgo.Message:
+				webhookEdit.Content = &content.Content
+				webhookEdit.Embeds = &content.Embeds
+				webhookEdit.Components = &content.Components
+			case string:
+				webhookEdit.Content = &content
+			case discordgo.MessageEmbed:
+				newEmbeds = append(newEmbeds, &content)
+			case discordgo.MessageComponent:
+				newComponents = append(newComponents, content)
+			}
+		}
+		if len(newComponents) > 0 {
+			webhookEdit.Components = &newComponents
+		}
+		if len(newEmbeds) > 0 {
+			webhookEdit.Embeds = &newEmbeds
+		}
+
+		msg, err := bot.FollowupMessageEdit(i, message.Reference().MessageID, &webhookEdit)
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+		return msg
+	}),
+
+	editResponse: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message {
 		webhookParams := discordgo.WebhookParams{}
-		for _, m := range message {
+		for _, m := range content {
 			switch content := m.(type) {
 			case string:
 				webhookParams.Content = content
@@ -115,13 +159,14 @@ var responses = map[int]any{
 				webhookParams.Components = append(webhookParams.Components, content)
 			}
 		}
-		err, _ := bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
+		msg, err := bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
 			Content:    &webhookParams.Content,
 			Components: &webhookParams.Components,
 		})
 		if err != nil {
 			errorEphemeral(bot, i, err)
 		}
+		return msg
 	}),
 
 	ephemeralBotIsResponding: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {

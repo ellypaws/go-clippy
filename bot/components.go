@@ -14,8 +14,8 @@ const (
 
 	readmoreDismiss = "readmore_dismiss"
 
-	paginationButton = "pagination_button"
-	okCancelButtons  = "ok_cancel_buttons"
+	paginationButtons = "pagination_button"
+	okCancelButtons   = "ok_cancel_buttons"
 )
 
 var components = map[string]discordgo.MessageComponent{
@@ -62,17 +62,17 @@ var components = map[string]discordgo.MessageComponent{
 		},
 	},
 
-	paginationButton: discordgo.ActionsRow{
+	paginationButtons: discordgo.ActionsRow{
 		Components: []discordgo.MessageComponent{
 			discordgo.Button{
 				Label:    "Previous",
 				Style:    discordgo.SecondaryButton,
-				CustomID: paginationButton + "_previous",
+				CustomID: paginationButtons + "_previous",
 			},
 			discordgo.Button{
 				Label:    "Next",
 				Style:    discordgo.SecondaryButton,
-				CustomID: paginationButton + "_next",
+				CustomID: paginationButtons + "_next",
 			},
 		},
 	},
