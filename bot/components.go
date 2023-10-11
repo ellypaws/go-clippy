@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -172,6 +173,23 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 
 	logError(errorString, i)
 
+	// decode ED4245 to int
+	color, _ := strconv.ParseInt("ED4245", 16, 64)
+
+	blankEmbed := []*discordgo.MessageEmbed{
+		{
+			Type: discordgo.EmbedTypeRich,
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "Error",
+					Value:  *sanitizeToken(&errorString),
+					Inline: false,
+				},
+			},
+			Color: int(color),
+		},
+	}
+
 	_ = bot.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -180,11 +198,13 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 			// (user who triggered the command)
 			Flags: discordgo.MessageFlagsEphemeral,
 			Content: fmt.Sprintf(
-				"Could not run the component `%v` on message `%v`: \n```\n%v\n```",
+				"Could not run the [component](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
 				i.MessageComponentData().CustomID,
+				i.GuildID,
+				i.ChannelID,
 				i.Message.ID,
-				*sanitizeToken(&errorString),
 			),
+			Embeds: blankEmbed,
 		},
 	})
 }
