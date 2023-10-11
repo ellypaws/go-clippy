@@ -119,6 +119,8 @@ func errorFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorConten
 	}
 	components := []discordgo.MessageComponent{components[deleteButton]}
 
+	logError(errorString, i)
+
 	_, _ = bot.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
 		Content:    *sanitizeToken(&errorString),
 		Components: components,
@@ -141,8 +143,9 @@ func errorEdit(bot *discordgo.Session, i *discordgo.Interaction, errorContent ..
 		errorString = "An unknown error has occurred"
 		errorString += "\nReceived:" + fmt.Sprint(content)
 	}
-
 	components := []discordgo.MessageComponent{components[deleteButton]}
+
+	logError(errorString, i)
 
 	_, _ = bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
 		Content:    sanitizeToken(&errorString),
@@ -167,16 +170,30 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 		errorString += "\nReceived:" + fmt.Sprint(content)
 	}
 
+	logError(errorString, i)
+
 	_ = bot.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			// Note: this isn't documented, but you can use that if you want to.
 			// This flag just allows you to create messages visible only for the caller of the command
 			// (user who triggered the command)
-			Flags:   discordgo.MessageFlagsEphemeral,
-			Content: "Could not run the button, got an error: " + *sanitizeToken(&errorString),
+			Flags: discordgo.MessageFlagsEphemeral,
+			Content: fmt.Sprintf(
+				"Could not run the component `%v` on message `%v`: \n```\n%v\n```",
+				i.MessageComponentData().CustomID,
+				i.Message.ID,
+				*sanitizeToken(&errorString),
+			),
 		},
 	})
+}
+
+func logError(errorString string, i *discordgo.Interaction) {
+	log.Printf("WARNING: A command failed to execute: %v", errorString)
+	log.Printf("Command: %v", i.MessageComponentData().CustomID)
+	log.Printf("User: %v", i.Member.User.Username)
+	log.Printf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
 }
 
 func sanitizeToken(errorString *string) *string {

@@ -133,7 +133,13 @@ func registerHandlers(bot *discordgo.Session) {
 		case discordgo.InteractionMessageComponent:
 			log.Printf("Button with customID `%v` was pressed, attempting to respond\n", i.MessageComponentData().CustomID)
 			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
-				log.Println("Handler found, executing")
+				log.Printf(
+					"Handler found, executing on message `%v`\nRan by: <@%v>\nUsername: %v",
+					i.Message.ID,
+					i.Member.User.ID,
+					i.Member.User.Username,
+				)
+				log.Printf("https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
 				h(bot, i)
 			}
 		}
