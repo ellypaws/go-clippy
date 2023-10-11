@@ -211,9 +211,13 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 
 func logError(errorString string, i *discordgo.Interaction) {
 	log.Printf("WARNING: A command failed to execute: %v", errorString)
-	log.Printf("Command: %v", i.MessageComponentData().CustomID)
+	if i.Type == discordgo.InteractionMessageComponent {
+		log.Printf("Command: %v", i.MessageComponentData().CustomID)
+	}
 	log.Printf("User: %v", i.Member.User.Username)
-	log.Printf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
+	if i.Type == discordgo.InteractionMessageComponent {
+		log.Printf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
+	}
 }
 
 func sanitizeToken(errorString *string) *string {
