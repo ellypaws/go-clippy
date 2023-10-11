@@ -29,6 +29,11 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		msg := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Testing followup message", components[paginationButtons])
 		time.Sleep(time.Second * 2)
 		responses[followupEdit].(editResponseType)(bot, i.Interaction, msg, "Editing followup message")
+
+		time.Sleep(time.Second * 2)
+		a := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Now let's see if we're deleting the correct message")
+		time.Sleep(time.Second * 2)
+		responses[followupEdit].(editResponseType)(bot, i.Interaction, a, components[deleteButton])
 	},
 
 	searchCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
