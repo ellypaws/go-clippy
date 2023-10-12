@@ -15,7 +15,6 @@ import (
 var sliceFuncs []functions.Function
 
 func main() {
-	database.Init()
 	choose()
 }
 

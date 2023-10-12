@@ -12,7 +12,7 @@ import (
 
 var db *bingo.Driver
 
-func Init() {
+func init() {
 	db = getDriver()
 	clippy.Collection = bingo.CollectionFrom[clippy.Clippy](db, "clippy")
 	functions.SheetsCollection = bingo.CollectionFrom[functions.Function](db, "sheets")
