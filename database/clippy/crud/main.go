@@ -6,6 +6,7 @@ import (
 	"go-clippy/database/clippy"
 	"math/rand"
 	"strconv"
+	"time"
 )
 
 func testUser(i int) (clippy.Award, clippy.Config) {
@@ -30,24 +31,42 @@ func testUser(i int) (clippy.Award, clippy.Config) {
 }
 
 func main() {
-	for i := 0; i < 500; i++ {
-		// random chance
-		switch rand.Intn(25) {
-		case 0:
-			testuser, testconfig := testUser(1)
-			testuser.Record()
-			testconfig.Record()
-		case 1:
-			testuser, testconfig := testUser(2)
-			testuser.Record()
-			testconfig.Record()
-		case 2:
-			testuser, testconfig := testUser(3)
-			testuser.Record()
-			testconfig.Record()
-		}
-	}
+	//for i := 0; i < 500; i++ {
+	//	// random chance
+	//	switch rand.Intn(25) {
+	//	case 0:
+	//		testuser, testconfig := testUser(1)
+	//		testuser.Record()
+	//		testconfig.Record()
+	//	case 1:
+	//		testuser, testconfig := testUser(2)
+	//		testuser.Record()
+	//		testconfig.Record()
+	//	case 2:
+	//		testuser, testconfig := testUser(3)
+	//		testuser.Record()
+	//		testconfig.Record()
+	//	}
+	//}
 
+	curTime := time.Now()
 	fmt.Println(clippy.Leaderboard(5))
+	fmt.Println("Took", time.Since(curTime))
+
+	curTime = time.Now()
+	fmt.Println(clippy.Leaderboard(5))
+	fmt.Println("Took", time.Since(curTime))
+
+	curTime = time.Now()
+	fmt.Println(clippy.Leaderboard(5))
+	fmt.Println("Took", time.Since(curTime))
+
+	curTime = time.Now()
+	fmt.Println(clippy.LeaderboardCached(5))
+	fmt.Println("Took", time.Since(curTime))
+	fmt.Println(clippy.LeaderboardCached(5))
+	fmt.Println("Took", time.Since(curTime))
+	fmt.Println(clippy.LeaderboardCached(5))
+	fmt.Println("Took", time.Since(curTime))
 
 }

@@ -56,6 +56,24 @@ func (c cacheMap) getAward(snowflake string) ([]*Award, error) {
 	return q.Items, q.Error
 }
 
+func (c cacheMap) awardsSnowflakeGuildCached(snowflake string, guild string) []*Award {
+	if user, ok := c[snowflake]; ok && user.Awards != nil {
+		return user.Awards
+	}
+
+	q := awardsSnowflakeGuild(snowflake, guild)
+
+	if len(q) == 0 {
+		return nil
+	}
+
+	c[snowflake] = &Cache{
+		Awards: q,
+	}
+
+	return q
+}
+
 func (c cacheMap) getConfig(snowflake string) (*Config, error) {
 	if user, ok := c[snowflake]; ok {
 		return &user.Config, nil

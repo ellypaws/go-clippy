@@ -69,6 +69,14 @@ func countTotalPoints(snowflake string) int {
 	return len(awardsSnowflake(snowflake))
 }
 
+func countTotalPointsCached(snowflake string) int {
+	award, err := cached.getAward(snowflake)
+	if err != nil {
+		return 0
+	}
+	return len(award)
+}
+
 func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
 	result := Collection.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
@@ -80,6 +88,19 @@ func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
 
 func countTotalPointsGuild(snowflake string, guild string) int {
 	return len(awardsSnowflakeGuild(snowflake, guild))
+}
+
+func countTotalPointsGuildCached(snowflake string, guild string) int {
+	award := cached.awardsSnowflakeGuildCached(snowflake, guild)
+	return len(award)
+}
+
+func countTotalPointsCachedGuild(snowflake string, guild string) int {
+	award, err := cached.getAward(snowflake)
+	if err != nil {
+		return 0
+	}
+	return len(award)
 }
 
 func GetOptedInConfigs() (users []*Config) {
@@ -159,7 +180,44 @@ func Leaderboard(max int, guild ...string) string {
 			userPointsSlice = append(userPointsSlice, userPoints{
 				Snowflake: u.Snowflake,
 				Username:  u.Username,
-				Points:    countTotalPoints(u.Snowflake),
+				Points:    countTotalPointsCached(u.Snowflake),
+			})
+		}
+	}
+
+	sortUserPoints(userPointsSlice)
+	if max == 0 {
+		max = len(userPointsSlice)
+	}
+	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
+
+	var leaderboard string = "Leaderboard:\n"
+	for i, user := range userPointsSlice {
+		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
+	}
+
+	return leaderboard
+}
+
+func LeaderboardCached(max int, guild ...string) string {
+	users := getPointsShowConfig()
+
+	// get all awards depending on guild
+	userPointsSlice = []userPoints{}
+	if len(guild) > 0 {
+		for _, u := range users {
+			userPointsSlice = append(userPointsSlice, userPoints{
+				Snowflake: u.Snowflake,
+				Username:  u.Username,
+				Points:    countTotalPointsGuildCached(u.Snowflake, guild[0]),
+			})
+		}
+	} else {
+		for _, u := range users {
+			userPointsSlice = append(userPointsSlice, userPoints{
+				Snowflake: u.Snowflake,
+				Username:  u.Username,
+				Points:    countTotalPointsCached(u.Snowflake),
 			})
 		}
 	}
