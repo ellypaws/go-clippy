@@ -6,7 +6,7 @@ import (
 )
 
 func (c Clippy) Record() {
-	id, err := ClippyCollection.Insert(c, bingo.Upsert)
+	id, err := Collection.Insert(c, bingo.Upsert)
 	if err != nil {
 		panic(err)
 	}

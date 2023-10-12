@@ -2,7 +2,7 @@ package clippy
 
 import "github.com/nokusukun/bingo"
 
-var ClippyCollection *bingo.Collection[Clippy]
+var Collection *bingo.Collection[Clippy]
 
 type Clippy struct {
 	Username  string   `json:"username,omitempty"`

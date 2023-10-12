@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/nokusukun/bingo"
-	. "go-clippy/database/clippy"
-	. "go-clippy/database/functions"
+	"go-clippy/database/clippy"
+	"go-clippy/database/functions"
 	"log"
 	"net/http"
 )
@@ -14,9 +14,9 @@ var db *bingo.Driver
 
 func Init() {
 	db = getDriver()
-	ClippyCollection = bingo.CollectionFrom[Clippy](db, "clippy")
-	SheetsCollection = bingo.CollectionFrom[Function](db, "sheets")
-	ExcelCollection = bingo.CollectionFrom[Function](db, "excel")
+	clippy.Collection = bingo.CollectionFrom[clippy.Clippy](db, "clippy")
+	functions.SheetsCollection = bingo.CollectionFrom[functions.Function](db, "sheets")
+	functions.ExcelCollection = bingo.CollectionFrom[functions.Function](db, "excel")
 }
 
 func getDriver() *bingo.Driver {
