@@ -3,6 +3,7 @@ package discord
 import (
 	"flag"
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
@@ -31,9 +32,14 @@ var (
 func init() { flag.Parse() }
 
 func init() {
+	_ = godotenv.Load()
 	if botToken == nil || *botToken == "" {
-		tokenEnv := os.Getenv("token")
+		tokenEnv := os.Getenv("BOT_TOKEN")
 		if tokenEnv != "" {
+			if tokenEnv == "YOUR_BOT_TOKEN_HERE" {
+				log.Fatalf("Invalid bot token: %v\n"+
+					"Did you edit the .env or run the program with -token ?", tokenEnv)
+			}
 			botToken = &tokenEnv
 		}
 	}
