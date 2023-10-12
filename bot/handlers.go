@@ -7,26 +7,31 @@ import (
 
 // Available methods for *discordgo.Session:
 
+var awarded = make(chan bool)
+
 var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
 	helloCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses[helloResponse].(newResponseType)(bot, i)
 	},
 	solvedCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		responses[pendingResponse].(newResponseType)(bot, i)
-		responses[ErrorResponse].(errorResponseType)(bot, i.Interaction, "This command is not implemented yet")
-		responses[ErrorFollowup].(errorResponseType)(bot, i.Interaction, "Testing followup error message")
+		//responses[pendingResponse].(newResponseType)(bot, i)
+		//responses[ErrorResponse].(errorResponseType)(bot, i.Interaction, "This command is not implemented yet")
+		//responses[ErrorFollowup].(errorResponseType)(bot, i.Interaction, "Testing followup error message")
+		//
+		//responses[awardClippy].(newResponseType)(bot, i)
+		//responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding clippy to <@"+i.Member.User.ID+">")
 
-		responses[awardClippy].(newResponseType)(bot, i)
-		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding clippy to <@"+i.Member.User.ID+">")
+		responses[ephemeralAwardSuggestion].(newResponseType)(bot, i)
 
-		responses[ephemeralAwardUser].(newResponseType)(bot, i)
+		<-awarded
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Thank you for choosing", components[okCancelButtons])
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		responses[thinkResponse].(newResponseType)(bot, i)
-		responses[editResponse].(msgReturnType)(bot, i.Interaction, "Testing editing response")
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Testing editing response")
 		time.Sleep(time.Second * 2)
-		responses[editResponse].(msgReturnType)(bot, i.Interaction, "Now with a button", components[okCancelButtons])
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Now with a button", components[okCancelButtons])
 
 		msg := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Testing followup message", components[paginationButtons])
 		time.Sleep(time.Second * 2)

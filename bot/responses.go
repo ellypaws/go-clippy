@@ -10,12 +10,13 @@ const (
 	followupResponse
 	followupEdit
 
-	editResponse
+	editInteractionResponse
 
 	ephemeralBotIsResponding
 	ephemeralContentResponse
-	ephemeralAwardUser
+	ephemeralAwardSuggestion
 
+	awardUserResponse
 	helloResponse
 
 	ErrorResponse
@@ -85,28 +86,8 @@ var responses = map[int]any{
 
 	followupEdit: editResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message *discordgo.Message, content ...any) *discordgo.Message {
 		webhookEdit := discordgo.WebhookEdit{}
-		var newEmbeds []*discordgo.MessageEmbed
-		var newComponents []discordgo.MessageComponent
-		for _, m := range content {
-			switch content := m.(type) {
-			case *discordgo.Message:
-				webhookEdit.Content = &content.Content
-				webhookEdit.Embeds = &content.Embeds
-				webhookEdit.Components = &content.Components
-			case string:
-				webhookEdit.Content = &content
-			case discordgo.MessageEmbed:
-				newEmbeds = append(newEmbeds, &content)
-			case discordgo.MessageComponent:
-				newComponents = append(newComponents, content)
-			}
-		}
-		if len(newComponents) > 0 {
-			webhookEdit.Components = &newComponents
-		}
-		if len(newEmbeds) > 0 {
-			webhookEdit.Embeds = &newEmbeds
-		}
+		contentEdit(&webhookEdit, message)
+		contentEdit(&webhookEdit, content...)
 
 		msg, err := bot.FollowupMessageEdit(i, message.Reference().MessageID, &webhookEdit)
 		if err != nil {
@@ -115,20 +96,11 @@ var responses = map[int]any{
 		return msg
 	}),
 
-	editResponse: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message {
-		webhookParams := discordgo.WebhookParams{}
-		for _, m := range content {
-			switch content := m.(type) {
-			case string:
-				webhookParams.Content = content
-			case discordgo.MessageComponent:
-				webhookParams.Components = append(webhookParams.Components, content)
-			}
-		}
-		msg, err := bot.InteractionResponseEdit(i, &discordgo.WebhookEdit{
-			Content:    &webhookParams.Content,
-			Components: &webhookParams.Components,
-		})
+	editInteractionResponse: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message {
+		webhookEdit := discordgo.WebhookEdit{}
+		contentEdit(&webhookEdit, content...)
+
+		msg, err := bot.InteractionResponseEdit(i, &webhookEdit)
 		if err != nil {
 			errorEphemeral(bot, i, err)
 		}
@@ -165,25 +137,14 @@ var responses = map[int]any{
 			errorFollowup(bot, i, err)
 		}
 	}),
-	ephemeralAwardUser: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	ephemeralAwardSuggestion: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		response := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "You haven't selected a user to award a point to.\n" +
 					"Do you want to award a point to someone?",
-				Flags: discordgo.MessageFlagsEphemeral,
-				Components: []discordgo.MessageComponent{
-					discordgo.ActionsRow{
-						Components: []discordgo.MessageComponent{
-							discordgo.SelectMenu{
-								MenuType:     discordgo.UserSelectMenu,
-								CustomID:     "clippy_award_user",
-								Placeholder:  "Pick a user to award a clippy point to",
-								ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
-							},
-						},
-					},
-				},
+				Flags:      discordgo.MessageFlagsEphemeral,
+				Components: []discordgo.MessageComponent{components[awardUserSelect], components[paginationButtons]},
 			},
 		}
 
@@ -191,6 +152,10 @@ var responses = map[int]any{
 		if err != nil {
 			errorEdit(bot, i.Interaction, err)
 		}
+	}),
+
+	awardUserResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+
 	}),
 
 	helloResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -210,6 +175,36 @@ var responses = map[int]any{
 	ErrorResponse:  errorResponseType(errorEdit),
 	ErrorFollowup:  errorResponseType(errorFollowup),
 	ErrorEphemeral: errorResponseType(errorEphemeral),
+}
+
+func contentEdit(webhookEdit *discordgo.WebhookEdit, messages ...any) {
+	if len(messages) == 0 {
+		return
+	}
+	var newEmbeds []*discordgo.MessageEmbed
+	var newComponents []discordgo.MessageComponent
+	for _, m := range messages {
+		switch c := m.(type) {
+		case *discordgo.Message:
+			webhookEdit.Content = &c.Content
+			webhookEdit.Embeds = &c.Embeds
+			webhookEdit.Components = &c.Components
+		case string:
+			//log.Println("String content: ", c)
+			webhookEdit.Content = &c
+		case discordgo.MessageEmbed:
+			newEmbeds = append(newEmbeds, &c)
+		case discordgo.MessageComponent:
+			//log.Println("Component: ", c)
+			newComponents = append(newComponents, c)
+		}
+	}
+	if len(newComponents) > 0 {
+		webhookEdit.Components = &newComponents
+	}
+	if len(newEmbeds) > 0 {
+		webhookEdit.Embeds = &newEmbeds
+	}
 }
 
 // ----- UNUSED COMMAND HANDLERS -----

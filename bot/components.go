@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -17,6 +18,9 @@ const (
 
 	paginationButtons = "pagination_button"
 	okCancelButtons   = "ok_cancel_buttons"
+
+	awardUserSelect     = "clippy_award_user"
+	awardedUserSelected = "clippy_awarded"
 )
 
 var components = map[string]discordgo.MessageComponent{
@@ -91,6 +95,17 @@ var components = map[string]discordgo.MessageComponent{
 			},
 		},
 	},
+
+	awardUserSelect: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.SelectMenu{
+				MenuType:     discordgo.UserSelectMenu,
+				CustomID:     awardUserSelect,
+				Placeholder:  "Pick a user to award a clippy point to",
+				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+			},
+		},
+	},
 }
 
 var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
@@ -99,6 +114,17 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 		if err != nil {
 			errorEphemeral(bot, i.Interaction, err)
 		}
+	},
+	awardUserSelect: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		if time.Now().Sub(i.Interaction.Message.Timestamp) > 5*time.Minute {
+			errorEphemeral(bot, i.Interaction, "This message is too old to award clippy points")
+			return
+		}
+		awarded <- true
+		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+i.MessageComponentData().Values[0]+">")
+	},
+	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Already awarded to xyz")
 	},
 }
 
@@ -190,6 +216,18 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 		},
 	}
 
+	var action string
+	var id string
+
+	switch i.Type {
+	case discordgo.InteractionApplicationCommand:
+		action = "command"
+		id = i.ApplicationCommandData().Name
+	case discordgo.InteractionMessageComponent:
+		action = "button"
+		id = i.MessageComponentData().CustomID
+	}
+
 	_ = bot.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -198,8 +236,9 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 			// (user who triggered the command)
 			Flags: discordgo.MessageFlagsEphemeral,
 			Content: fmt.Sprintf(
-				"Could not run the [component](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
-				i.MessageComponentData().CustomID,
+				"Could not run the [%v](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
+				action,
+				id,
 				i.GuildID,
 				i.ChannelID,
 				i.Message.ID,
