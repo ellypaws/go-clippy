@@ -24,6 +24,6 @@ type Award struct {
 	CallerUsername  string `json:"caller_username,omitempty"`
 }
 
-func (c Clippy) Key() []byte {
-	return []byte(c.Snowflake)
+func (user Clippy) Key() []byte {
+	return []byte(user.Snowflake)
 }
