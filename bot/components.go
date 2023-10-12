@@ -120,7 +120,7 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 			errorEphemeral(bot, i.Interaction, "This message is too old to award clippy points")
 			return
 		}
-		awarded <- true
+		channels[awardUserSelect] <- true
 		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+i.MessageComponentData().Values[0]+">")
 	},
 	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {

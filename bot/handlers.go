@@ -7,7 +7,9 @@ import (
 
 // Available methods for *discordgo.Session:
 
-var awarded = make(chan bool)
+var channels = map[string]chan bool{
+	awardUserSelect: make(chan bool),
+}
 
 var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
 	helloCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -23,7 +25,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		responses[ephemeralAwardSuggestion].(newResponseType)(bot, i)
 
-		<-awarded
+		<-channels[awardUserSelect]
+		channels[awardUserSelect] <- false
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Thank you for choosing", components[okCancelButtons])
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
