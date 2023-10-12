@@ -8,7 +8,7 @@ import (
 // Available methods for *discordgo.Session:
 
 var channels = map[string]chan bool{
-	awardUserSelect: make(chan bool),
+	awardUserSelect: make(chan bool), // Not really used, only for debugging
 }
 
 var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.InteractionCreate){
@@ -23,11 +23,15 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		//responses[awardClippy].(newResponseType)(bot, i)
 		//responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding clippy to <@"+i.Member.User.ID+">")
 
-		responses[ephemeralAwardSuggestion].(newResponseType)(bot, i)
+		response := responses[ephemeralAwardSuggestion].(newReturnType)(bot, i)
 
-		<-channels[awardUserSelect]
-		channels[awardUserSelect] <- false
-		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Thank you for choosing", components[okCancelButtons])
+		//log.Printf("Response: %+v\n", response)
+		//log.Printf("InteractionCreate: %+v\n", i)
+		//log.Printf("InteractionCreate.Interaction: %+v\n", i.Interaction)
+
+		channels[response.ID] = make(chan bool)
+		<-channels[response.ID]
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Thank you for choosing", components[awardUserSelect])
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
@@ -48,6 +52,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 	searchCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses[thinkResponse].(newResponseType)(bot, i)
+		// TODO: Check if options are populated
 		responses[messageResponse].(msgResponseType)(bot, i.Interaction, "Searching for "+i.ApplicationCommandData().Options[0].StringValue()+"...")
 	},
 }

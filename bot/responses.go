@@ -27,9 +27,10 @@ const (
 )
 
 type newResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate)
-type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction, messageToEdit *discordgo.Message, content ...any) *discordgo.Message
+type newReturnType func(bot *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.Message
 type msgResponseType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any)
 type msgReturnType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message
+type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction, messageToEdit *discordgo.Message, content ...any) *discordgo.Message
 type errorResponseType msgResponseType
 
 var responses = map[int]any{
@@ -137,8 +138,8 @@ var responses = map[int]any{
 			errorFollowup(bot, i, err)
 		}
 	}),
-	ephemeralAwardSuggestion: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		response := &discordgo.InteractionResponse{
+	ephemeralAwardSuggestion: newReturnType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.Message {
+		message := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
 				Content: "You haven't selected a user to award a point to.\n" +
@@ -148,10 +149,13 @@ var responses = map[int]any{
 			},
 		}
 
-		err := bot.InteractionRespond(i.Interaction, response)
+		err := bot.InteractionRespond(i.Interaction, message)
 		if err != nil {
 			errorEdit(bot, i.Interaction, err)
 		}
+
+		interactionResponse, _ := bot.InteractionResponse(i.Interaction)
+		return interactionResponse
 	}),
 
 	awardUserResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {

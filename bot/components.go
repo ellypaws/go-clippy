@@ -120,7 +120,10 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 			errorEphemeral(bot, i.Interaction, "This message is too old to award clippy points")
 			return
 		}
-		channels[awardUserSelect] <- true
+		//log.Printf("[COMPONENT] InteractionCreate: %+v\n", i)
+		//log.Printf("[COMPONENT] InteractionCreate.Interaction: %+v\n", i.Interaction)
+		//log.Printf("[COMPONENT] InteractionCreate.Interaction.Message: %+v\n", i.Interaction.Message)
+		channels[i.Message.ID] <- true
 		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+i.MessageComponentData().Values[0]+">")
 	},
 	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -234,7 +237,7 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 			// Note: this isn't documented, but you can use that if you want to.
 			// This flag just allows you to create messages visible only for the caller of the command
 			// (user who triggered the command)
-			Flags: discordgo.MessageFlagsEphemeral,
+			Flags: discordgo.MessageFlagsEphemeral & discordgo.MessageFlagsSupressEmbeds,
 			Content: fmt.Sprintf(
 				"Could not run the [%v](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
 				action,
