@@ -7,10 +7,6 @@ import (
 var ExcelCollection *bingo.Collection[Function]
 var SheetsCollection *bingo.Collection[Function]
 
-func (f Function) Key() []byte {
-	return []byte(f.Name)
-}
-
 type Function struct {
 	Name        string   `json:"name,omitempty"`
 	Category    string   `json:"category,omitempty"`
@@ -33,6 +29,10 @@ type Args struct {
 	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
 	Variadic    bool   `json:"variadic,omitempty"`
 	Optional    bool   `json:"optional,omitempty"`
+}
+
+func (f Function) Key() []byte {
+	return []byte(f.Name)
 }
 
 func GetCollection(platform string) *bingo.Collection[Function] {

@@ -11,19 +11,19 @@ type Clippy struct {
 }
 
 type Points struct {
-	Score   int    `json:"score,omitempty"`
-	Guild   string `json:"guild,omitempty"`
-	GuildID int    `json:"guild_id,omitempty"`
+	Awards    []Award `json:"score,omitempty"`
+	GuildName string  `json:"guild_name,omitempty"`
+	GuildID   string  `json:"guild_id,omitempty"`
+}
+
+type Award struct {
+	Channel         string `json:"channel,omitempty"`
+	ChannelID       string `json:"channel_id,omitempty"`
+	MessageID       string `json:"message_id,omitempty"`
+	CallerSnowflake string `json:"caller_snowflake,omitempty"`
+	CallerUsername  string `json:"caller_username,omitempty"`
 }
 
 func (c Clippy) Key() []byte {
 	return []byte(c.Snowflake)
-}
-
-func (c Clippy) Record() {
-	id, err := ClippyCollection.Insert(c, bingo.Upsert)
-	if err != nil {
-		panic(err)
-	}
-	println("Inserted", id)
 }
