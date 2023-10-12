@@ -65,11 +65,11 @@ func awardsSnowflake(snowflake string) []*Award {
 	return q.Items
 }
 
-func countTotalPoints(snowflake string) int {
+func CountTotalPoints(snowflake string) int {
 	return len(awardsSnowflake(snowflake))
 }
 
-func countTotalPointsCached(snowflake string) int {
+func CountTotalPointsCached(snowflake string) int {
 	award, err := cached.getAward(snowflake)
 	if err != nil {
 		return 0
@@ -86,20 +86,12 @@ func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
 	return result.Items
 }
 
-func countTotalPointsGuild(snowflake string, guild string) int {
+func CountTotalPointsGuild(snowflake string, guild string) int {
 	return len(awardsSnowflakeGuild(snowflake, guild))
 }
 
-func countTotalPointsGuildCached(snowflake string, guild string) int {
+func CountTotalPointsGuildCached(snowflake string, guild string) int {
 	award := cached.awardsSnowflakeGuildCached(snowflake, guild)
-	return len(award)
-}
-
-func countTotalPointsCachedGuild(snowflake string, guild string) int {
-	award, err := cached.getAward(snowflake)
-	if err != nil {
-		return 0
-	}
 	return len(award)
 }
 
@@ -150,7 +142,7 @@ func sortUsersByPoints(users []*Config) {
 		userPointsSlice = append(userPointsSlice, userPoints{
 			Snowflake: user.Snowflake,
 			Username:  user.Username,
-			Points:    countTotalPoints(user.Snowflake),
+			Points:    CountTotalPoints(user.Snowflake),
 		})
 	}
 }
@@ -172,7 +164,7 @@ func Leaderboard(max int, guild ...string) string {
 			userPointsSlice = append(userPointsSlice, userPoints{
 				Snowflake: u.Snowflake,
 				Username:  u.Username,
-				Points:    countTotalPointsGuild(u.Snowflake, guild[0]),
+				Points:    CountTotalPointsGuild(u.Snowflake, guild[0]),
 			})
 		}
 	} else {
@@ -180,7 +172,7 @@ func Leaderboard(max int, guild ...string) string {
 			userPointsSlice = append(userPointsSlice, userPoints{
 				Snowflake: u.Snowflake,
 				Username:  u.Username,
-				Points:    countTotalPointsCached(u.Snowflake),
+				Points:    CountTotalPoints(u.Snowflake),
 			})
 		}
 	}
@@ -209,7 +201,7 @@ func LeaderboardCached(max int, guild ...string) string {
 			userPointsSlice = append(userPointsSlice, userPoints{
 				Snowflake: u.Snowflake,
 				Username:  u.Username,
-				Points:    countTotalPointsGuildCached(u.Snowflake, guild[0]),
+				Points:    CountTotalPointsGuildCached(u.Snowflake, guild[0]),
 			})
 		}
 	} else {
@@ -217,7 +209,7 @@ func LeaderboardCached(max int, guild ...string) string {
 			userPointsSlice = append(userPointsSlice, userPoints{
 				Snowflake: u.Snowflake,
 				Username:  u.Username,
-				Points:    countTotalPointsCached(u.Snowflake),
+				Points:    CountTotalPointsCached(u.Snowflake),
 			})
 		}
 	}

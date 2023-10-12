@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "go-clippy/database"
 	"go-clippy/database/clippy"
+	"log"
 	"math/rand"
 	"strconv"
 	"time"
@@ -51,22 +52,57 @@ func main() {
 
 	curTime := time.Now()
 	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Took", time.Since(curTime))
+	fmt.Println("Non cached:", time.Since(curTime))
 
 	curTime = time.Now()
 	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Took", time.Since(curTime))
+	fmt.Println("Non cached:", time.Since(curTime))
 
 	curTime = time.Now()
 	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Took", time.Since(curTime))
+	fmt.Println("Non cached:", time.Since(curTime))
 
 	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Took", time.Since(curTime))
+	fmt.Println("Cached:", time.Since(curTime))
+	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Took", time.Since(curTime))
+	curTime = time.Now()
+	fmt.Println("Cached:", time.Since(curTime))
+	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Took", time.Since(curTime))
+	fmt.Println("Cached:", time.Since(curTime))
 
+	//clippy.CountTotalPoints("SNOWFLAKE1")
+	//
+	//clippy.CountTotalPointsCached("SNOWFLAKE1")
+
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
+	})
+
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+	})
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
+	})
+
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+	})
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
+	})
+
+	timeTaken(func() {
+		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+	})
+
+}
+
+func timeTaken(f func()) {
+	start := time.Now()
+	f()
+	log.Println("Took", time.Since(start))
 }
