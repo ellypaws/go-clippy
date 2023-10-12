@@ -7,16 +7,17 @@ import (
 	"slices"
 )
 
-func (user Clippy) Record() {
-	id, err := Collection.Insert(user, bingo.Upsert)
+func (point Award) Record() {
+	_, err := Collection.Insert(point, bingo.Upsert)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Inserted", id)
+	cached.updateAwards(&point)
+	//log.Println("Inserted", id)
 }
 
-func RecordMany(c []Clippy) {
-	id, err := Collection.InsertMany(c, bingo.Upsert)
+func RecordMany(awards []Award) {
+	id, err := Collection.InsertMany(awards, bingo.Upsert)
 	if err != nil {
 		panic(err)
 	}
@@ -25,111 +26,154 @@ func RecordMany(c []Clippy) {
 	}
 }
 
-func GetUser(s string) (*Clippy, error) {
-	q := QueryClippy(s)
-	if q.Error != nil {
-		return nil, q.Error
+func (user Config) Record() {
+	_, err := UserSettings.Insert(user, bingo.Upsert)
+	if err != nil {
+		panic(err)
 	}
-	return q.First(), nil
+	//fmt.Println("Inserted", id)
 }
 
-func QueryClippy(s string) *bingo.QueryResult[Clippy] {
-	return Collection.Query(bingo.Query[Clippy]{
-		Filter: func(doc Clippy) bool {
-			return doc.Snowflake == s
+func QueryClippy(snowflake string) *bingo.QueryResult[Award] {
+	return Collection.Query(bingo.Query[Award]{
+		Filter: func(point Award) bool {
+			return point.Snowflake == snowflake
+		},
+		// we cannot use keys because we're just storing the awards
+		//Keys: [][]byte{
+		//	[]byte(snowflake),
+		//},
+	})
+}
+
+func QueryConfig(snowflake string) *bingo.QueryResult[Config] {
+	return UserSettings.Query(bingo.Query[Config]{
+		//Filter: func(user Config) bool {
+		//	return user.Snowflake == snowflake
+		//},
+		Keys: [][]byte{
+			[]byte(snowflake),
 		},
 	})
 }
 
-func (user Clippy) countTotalPoints(collection *bingo.Collection[Clippy]) int {
-	var count int
-	for _, point := range user.Points {
-		count += len(point.Awards)
+func awardsSnowflake(snowflake string) []*Award {
+	q := QueryClippy(snowflake)
+	if q.Error != nil || !q.Any() {
+		return nil
 	}
-	return count
+	return q.Items
 }
 
-func PointsOfSnowflake(s string) int {
-	user, err := GetUser(s)
-	if err != nil || user == nil {
-		return 0
-	}
-	return user.countTotalPoints(Collection)
+func countTotalPoints(snowflake string) int {
+	return len(awardsSnowflake(snowflake))
 }
 
-func PointsOfSnowflakeWithGuild(snowflake string, guild string) int {
-	user, err := GetUser(snowflake)
-	if err != nil || user == nil {
-		return 0
-	}
-	for _, point := range user.Points {
-		if point.GuildID == guild {
-			return len(point.Awards)
-		}
-	}
-	return 0
-}
-
-func GetUsersWithAwardsFromGuild(guild string) (users []*Clippy) {
-	res := Collection.Query(bingo.Query[Clippy]{
-		Filter: func(user Clippy) bool {
-			for _, point := range user.Points {
-				if point.GuildID == guild && len(point.Awards) > 0 {
-					return true
-				}
-			}
-			return false
+func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
+	result := Collection.Query(bingo.Query[Award]{
+		Filter: func(point Award) bool {
+			return point.Snowflake == snowflake && point.GuildID == guild
 		},
 	})
-	return res.Items
+	return result.Items
 }
 
-func GetUsersWithAwards() (users []*Clippy) {
-	res := Collection.Query(bingo.Query[Clippy]{
-		Filter: func(doc Clippy) bool {
-			return len(doc.Points) > 0
+func countTotalPointsGuild(snowflake string, guild string) int {
+	return len(awardsSnowflakeGuild(snowflake, guild))
+}
+
+func GetOptedInConfigs() (users []*Config) {
+	result := UserSettings.Query(bingo.Query[Config]{
+		Filter: func(user Config) bool {
+			return !user.OptOut
 		},
 	})
-	return res.Items
+	for _, user := range result.Items {
+		users = append(users, user)
+	}
+	return users
 }
 
-func slicePointersToValues(users []*Clippy) []Clippy {
-	var usersdereferenced []Clippy
+func getPointsShowConfig() (users []*Config) {
+	result := UserSettings.Query(bingo.Query[Config]{
+		Filter: func(user Config) bool {
+			return !user.Private
+		},
+	})
+	for _, user := range result.Items {
+		users = append(users, user)
+	}
+	return users
+}
+
+func slicePointersToValues(users []*Config) []Config {
+	var usersdereferenced []Config
 	for _, user := range users {
 		usersdereferenced = append(usersdereferenced, *user)
 	}
 	return usersdereferenced
 }
 
-func sortUserByPoints(users []*Clippy) []Clippy {
+type userPoints struct {
+	Snowflake string
+	Username  string
+	Points    int
+}
+
+var userPointsSlice []userPoints
+
+func sortUsersByPoints(users []*Config) {
 	usersToSort := slicePointersToValues(users)
-	slices.SortStableFunc(usersToSort, func(a, b Clippy) int {
-		return cmp.Compare(a.countTotalPoints(Collection), b.countTotalPoints(Collection))
+	userPointsSlice = []userPoints{}
+	for _, user := range usersToSort {
+		userPointsSlice = append(userPointsSlice, userPoints{
+			Snowflake: user.Snowflake,
+			Username:  user.Username,
+			Points:    countTotalPoints(user.Snowflake),
+		})
+	}
+}
+
+func sortUserPoints(users []userPoints) []userPoints {
+	slices.SortStableFunc(users, func(a, b userPoints) int {
+		return cmp.Compare(b.Points, a.Points)
 	})
-	return usersToSort
+	return users
 }
 
 func Leaderboard(max int, guild ...string) string {
-	var users []*Clippy
+	users := getPointsShowConfig()
+
+	// get all awards depending on guild
+	userPointsSlice = []userPoints{}
 	if len(guild) > 0 {
-		for _, g := range guild {
-			users = append(users, GetUsersWithAwardsFromGuild(g)...)
+		for _, u := range users {
+			userPointsSlice = append(userPointsSlice, userPoints{
+				Snowflake: u.Snowflake,
+				Username:  u.Username,
+				Points:    countTotalPointsGuild(u.Snowflake, guild[0]),
+			})
 		}
 	} else {
-		users = GetUsersWithAwards()
+		for _, u := range users {
+			userPointsSlice = append(userPointsSlice, userPoints{
+				Snowflake: u.Snowflake,
+				Username:  u.Username,
+				Points:    countTotalPoints(u.Snowflake),
+			})
+		}
 	}
-	if len(users) == 0 {
-		return "No users found"
-	}
-	sorted := sortUserByPoints(users)
-	if max == 0 {
-		max = len(sorted)
-	}
-	sorted = sorted[:min(max, len(sorted))-1]
 
-	var leaderboard string
-	for i, user := range sorted {
-		leaderboard += fmt.Sprintf("%d. %s (%d)\n", i+1, user.Username, user.countTotalPoints(Collection))
+	sortUserPoints(userPointsSlice)
+	if max == 0 {
+		max = len(userPointsSlice)
 	}
+	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
+
+	var leaderboard string = "Leaderboard:\n"
+	for i, user := range userPointsSlice {
+		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
+	}
+
 	return leaderboard
 }

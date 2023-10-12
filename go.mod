@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/bwmarrin/discordgo v0.27.2-0.20230922130345-1f0b57f11024
+	github.com/joho/godotenv v1.5.1
 	github.com/nokusukun/bingo v0.2.3
 )
 
