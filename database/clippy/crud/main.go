@@ -64,11 +64,12 @@ func main() {
 
 	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Cached:", time.Since(curTime))
+	fmt.Println("Cached (first run):", time.Since(curTime))
+
 	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
-	curTime = time.Now()
 	fmt.Println("Cached:", time.Since(curTime))
+
 	curTime = time.Now()
 	fmt.Println(clippy.LeaderboardCached(5))
 	fmt.Println("Cached:", time.Since(curTime))
@@ -78,25 +79,22 @@ func main() {
 	//clippy.CountTotalPointsCached("SNOWFLAKE1")
 
 	timeTaken(func() {
-		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
-	})
-
-	timeTaken(func() {
-		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
 	})
 	timeTaken(func() {
-		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
-	})
-
-	timeTaken(func() {
-		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
 	})
 	timeTaken(func() {
-		log.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
+		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
 	})
-
 	timeTaken(func() {
-		log.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+		log.Println("CACHED (1)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
+	})
+	timeTaken(func() {
+		log.Println("CACHED (2)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
+	})
+	timeTaken(func() {
+		log.Println("CACHED (3)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
 	})
 
 }
