@@ -2,101 +2,103 @@ package clippy
 
 import (
 	"cmp"
-	"fmt"
 	"github.com/nokusukun/bingo"
 	"slices"
 )
+
+type Request struct {
+	Snowflake string
+	GuildID   string
+}
 
 func (point Award) Record() {
 	_, err := Collection.Insert(point, bingo.Upsert)
 	if err != nil {
 		panic(err)
 	}
-	CacheMap.updateAwards(&point)
+	Cache.updateAwards(&point)
 	//log.Println("Inserted", id)
 }
 
-func RecordMany(awards []Award) {
-	id, err := Collection.InsertMany(awards, bingo.Upsert)
+func (config User) Record() {
+	_, err := UserSettings.Insert(config, bingo.Upsert)
 	if err != nil {
 		panic(err)
 	}
-	for _, i := range id {
-		fmt.Println("Inserted", i)
-	}
-}
-
-func (user Config) Record() {
-	_, err := UserSettings.Insert(user, bingo.Upsert)
-	if err != nil {
-		panic(err)
-	}
+	Cache.updateConfig(config)
 	//fmt.Println("Inserted", id)
 }
 
-func QueryClippy(snowflake string) *bingo.QueryResult[Award] {
-	return Collection.Query(bingo.Query[Award]{
+func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
+	result := Collection.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
-			return point.Snowflake == snowflake
+			snowflakeMatch := request.Snowflake == "" || point.Snowflake == request.Snowflake
+			guildIDMatch := request.GuildID == "" || point.GuildID == request.GuildID
+			return snowflakeMatch && guildIDMatch
 		},
 		// we cannot use keys because we're just storing the awards
 		//Keys: [][]byte{
 		//	[]byte(snowflake),
 		//},
 	})
+	for _, award := range result.Items {
+		c.updateAwards(award)
+	}
+	return result
 }
 
-func QueryConfig(snowflake string) *bingo.QueryResult[Config] {
-	return UserSettings.Query(bingo.Query[Config]{
-		//Filter: func(user Config) bool {
+func (c cacheMap) queryConfig(snowflake string) *bingo.QueryResult[User] {
+	result := UserSettings.Query(bingo.Query[User]{
+		//Filter: func(user User) bool {
 		//	return user.Snowflake == snowflake
 		//},
 		Keys: [][]byte{
 			[]byte(snowflake),
 		},
 	})
-}
-
-func awardsSnowflake(snowflake string) []*Award {
-	q := QueryClippy(snowflake)
-	if q.Error != nil || !q.Any() {
-		return nil
+	if !result.Any() {
+		c[snowflake] = &CacheType{}
 	}
-	return q.Items
+	return result
 }
 
-func CountTotalPoints(snowflake string) int {
-	return len(awardsSnowflake(snowflake))
-}
-
-func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
-	result := Collection.Query(bingo.Query[Award]{
-		Filter: func(point Award) bool {
-			return point.Snowflake == snowflake && point.GuildID == guild
-		},
-	})
-	return result.Items
-}
-
-func CountTotalPointsGuild(snowflake string, guild string) int {
-	return len(awardsSnowflakeGuild(snowflake, guild))
-}
-
-func getOptedInConfigs() (users []*Config) {
-	result := UserSettings.Query(bingo.Query[Config]{
-		Filter: func(user Config) bool {
-			return !user.OptOut
-		},
-	})
-	for _, user := range result.Items {
-		users = append(users, user)
+func (c cacheMap) updateAwards(award *Award) {
+	if user, ok := c[award.Snowflake]; ok {
+		user.Awards = append(user.Awards, award)
+	} else {
+		c[award.Snowflake] = &CacheType{
+			Awards: []*Award{award},
+		}
 	}
-	return users
 }
 
-func getPointsShowConfig() (users []*Config) {
-	result := UserSettings.Query(bingo.Query[Config]{
-		Filter: func(user Config) bool {
+func (c cacheMap) updateConfig(config User) {
+	if user, ok := c[config.Snowflake]; ok {
+		user.Config = config
+	} else {
+		c[config.Snowflake] = &CacheType{
+			Config: config,
+		}
+	}
+	if c[config.Snowflake].Config.Points == 0 {
+		c[config.Snowflake].Config.Points = c.countAwards(config.Snowflake)
+	}
+}
+
+func (c cacheMap) GetConfig(snowflake string) User {
+	if _, ok := c[snowflake]; !ok {
+		config := c.queryConfig(snowflake)
+		if !config.Any() {
+			return User{}
+		}
+		c.updateConfig(*config.First())
+	}
+	return c[snowflake].Config
+}
+
+func getPublicUsers() (users []*User) {
+	result := UserSettings.Query(bingo.Query[User]{
+		Filter: func(user User) bool {
 			return !user.Private
 		},
 	})
@@ -104,14 +106,6 @@ func getPointsShowConfig() (users []*Config) {
 		users = append(users, user)
 	}
 	return users
-}
-
-func slicePointersToValues(users []*Config) []Config {
-	var usersdereferenced []Config
-	for _, user := range users {
-		usersdereferenced = append(usersdereferenced, *user)
-	}
-	return usersdereferenced
 }
 
 type userPoints struct {
@@ -122,58 +116,9 @@ type userPoints struct {
 
 var userPointsSlice []userPoints
 
-func sortUsersByPoints(users []*Config) {
-	usersToSort := slicePointersToValues(users)
-	userPointsSlice = []userPoints{}
-	for _, user := range usersToSort {
-		userPointsSlice = append(userPointsSlice, userPoints{
-			Snowflake: user.Snowflake,
-			Username:  user.Username,
-			Points:    CountTotalPoints(user.Snowflake),
-		})
-	}
-}
-
 func sortUserPoints(users []userPoints) []userPoints {
 	slices.SortStableFunc(users, func(a, b userPoints) int {
 		return cmp.Compare(b.Points, a.Points)
 	})
 	return users
-}
-
-func Leaderboard(max int, guild ...string) string {
-	users := getPointsShowConfig()
-
-	// get all awards depending on guild
-	userPointsSlice = []userPoints{}
-	if len(guild) > 0 {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPointsGuild(u.Snowflake, guild[0]),
-			})
-		}
-	} else {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPoints(u.Snowflake),
-			})
-		}
-	}
-
-	sortUserPoints(userPointsSlice)
-	if max == 0 {
-		max = len(userPointsSlice)
-	}
-	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
-
-	var leaderboard string = "Leaderboard:\n"
-	for i, user := range userPointsSlice {
-		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
-	}
-
-	return leaderboard[:len(leaderboard)-1]
 }

@@ -2,17 +2,16 @@ package clippy
 
 import (
 	"fmt"
-	"github.com/nokusukun/bingo"
 )
 
-type Cache struct {
-	Config Config
+type CacheType struct {
+	Config User
 	Awards []*Award
 }
 
-type cacheMap map[string]*Cache
+type cacheMap map[string]*CacheType
 
-var CacheMap = make(cacheMap)
+var Cache = NewCache()
 
 func NewCache() cacheMap {
 	return make(cacheMap)
@@ -23,195 +22,69 @@ func (c cacheMap) Reset() {
 		delete(c, k)
 	}
 }
-
-func (c cacheMap) queryDB(snowflake string) {
-	c[snowflake] = &Cache{
-		Config: *QueryConfig(snowflake).First(),
-		Awards: QueryClippy(snowflake).Items,
-	}
+func (c cacheMap) Private(snowflake string) bool {
+	return c.GetConfig(snowflake).Private
 }
 
-func (c cacheMap) updateAwards(award *Award) {
-	if user, ok := c[award.Snowflake]; ok {
-		user.Awards = append(user.Awards, award)
+func (c cacheMap) OptOut(snowflake string) bool {
+	return c.GetConfig(snowflake).OptOut
+}
+
+func (c cacheMap) countAwards(snowflake string) int {
+	if _, ok := c[snowflake]; !ok {
+		c.allAwards(Request{})
+	}
+	return len(c[snowflake].Awards)
+}
+
+func (c cacheMap) updatePoints(snowflake string) {
+	if _, ok := c[snowflake]; !ok {
+		c.GetConfig(snowflake)
 	} else {
-		c[award.Snowflake] = &Cache{
-			Awards: []*Award{award},
-		}
+		c[snowflake].Config.Points = c.countAwards(snowflake)
 	}
+	c[snowflake].Config.Record()
 }
 
-func (c cacheMap) updateConfig(config Config) {
-	if user, ok := c[config.Snowflake]; ok {
-		user.Config = config
-	} else {
-		c[config.Snowflake] = &Cache{
-			Config: config,
-		}
-	}
-}
-
-func (c cacheMap) getAward(snowflake string) ([]*Award, error) {
-	if user, ok := c[snowflake]; ok && user.Awards != nil {
-		return user.Awards, nil
-	}
-
-	q := QueryClippy(snowflake)
-
-	if !q.Any() {
-		return nil, fmt.Errorf("no awards found for %s", snowflake)
-	}
-
-	c[snowflake] = &Cache{
-		Awards: q.Items,
-	}
-
-	return q.Items, q.Error
-}
-
-func (c cacheMap) awardsSnowflakeGuildCached(snowflake string, guild string) []*Award {
-	if user, ok := c[snowflake]; ok && user.Awards != nil {
-		return user.Awards
-	}
-
-	q := awardsSnowflakeGuild(snowflake, guild)
-
-	if len(q) == 0 {
-		return nil
-	}
-
-	c[snowflake] = &Cache{
-		Awards: q,
-	}
-
-	return q
-}
-
-func (c cacheMap) getConfig(snowflake string) (*Config, error) {
-	if user, ok := c[snowflake]; ok {
-		return &user.Config, nil
-	}
-
-	q := QueryConfig(snowflake)
-
-	if !q.Any() {
-		return nil, fmt.Errorf("no config found for %s", snowflake)
-	}
-
-	c[snowflake] = &Cache{
-		Config: *q.First(),
-	}
-
-	return q.First(), q.Error
-}
-
-func CountTotalPointsCached(snowflake string) int {
-	award, err := CacheMap.getAward(snowflake)
-	if err != nil {
+func (c cacheMap) QueryPoints(request Request) int {
+	if c.OptOut(request.Snowflake) || c.Private(request.Snowflake) {
 		return 0
 	}
-	return len(award)
-}
-
-func CountTotalPointsGuildCached(snowflake string, guild string) int {
-	award := CacheMap.awardsSnowflakeGuildCached(snowflake, guild)
-	return len(award)
-}
-
-func CountTotalPointsGuildPrecached(snowflake string, guild ...string) int {
-	if _, ok := CacheMap[snowflake]; !ok {
-		PrecacheAwards(CacheMap, guild...)
+	if _, ok := c[request.Snowflake]; !ok {
+		c.GetConfig(request.Snowflake)
 	}
-	award := CacheMap[snowflake].Awards
-	return len(award)
+	return c[request.Snowflake].Config.Points
 }
 
-func PrecacheAwards(cache cacheMap, guild ...string) {
-	users := getPointsShowConfig()
+func (c cacheMap) precacheAwards(request Request) {
+	users := getPublicUsers()
 	for _, user := range users {
-		cache[user.Snowflake] = &Cache{
+		c[user.Snowflake] = &CacheType{
 			Config: *user,
 		}
 	}
-	var result *bingo.QueryResult[Award]
+	c.allAwards(request)
 
-	result = Collection.Query(bingo.Query[Award]{
-		Filter: func(award Award) bool {
-			if len(guild) > 0 {
-				return award.GuildID == guild[0]
-			} else {
-				return true
-			}
-		},
-	})
-
-	for _, award := range result.Items {
-		if user, ok := cache[award.Snowflake]; ok {
-			user.Awards = append(user.Awards, award)
-		} else {
-			cache[award.Snowflake] = &Cache{
-				Awards: []*Award{award},
-			}
+	// TODO: Remove in production, ensure that we're always writing to both databases when recording an award
+	for _, user := range users {
+		if user.Points == 0 {
+			c.updatePoints(user.Snowflake)
 		}
 	}
 }
 
-func LeaderboardCached(max int, guild ...string) string {
-	users := getPointsShowConfig()
-
-	// get all awards depending on guild
-	userPointsSlice = []userPoints{}
-	if len(guild) > 0 {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPointsGuildCached(u.Snowflake, guild[0]),
-			})
-		}
-	} else {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPointsCached(u.Snowflake),
-			})
-		}
+func (c cacheMap) LeaderboardPrecached(max int, request Request) string {
+	users := getPublicUsers()
+	if len(Cache) == 0 {
+		c.precacheAwards(request)
 	}
 
-	sortUserPoints(userPointsSlice)
-	if max == 0 {
-		max = len(userPointsSlice)
-	}
-	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
-
-	var leaderboard string = "Leaderboard:\n"
-	for i, user := range userPointsSlice {
-		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
-	}
-
-	return leaderboard[:len(leaderboard)-1]
-}
-
-func LeaderboardPrecached(max int, guild ...string) string {
-	users := getPointsShowConfig()
-	if len(CacheMap) == 0 {
-		PrecacheAwards(CacheMap, guild...)
-	}
-
-	//log.Printf("Precached %v users", precache)
-
-	//for k, v := range precache {
-	//	log.Printf("%v: %v", k, v)
-	//}
-
-	// get all awards depending on guild
 	userPointsSlice = []userPoints{}
 	for _, u := range users {
 		userPointsSlice = append(userPointsSlice, userPoints{
 			Snowflake: u.Snowflake,
 			Username:  u.Username,
-			Points:    len(CacheMap[u.Snowflake].Awards),
+			Points:    u.Points,
 		})
 	}
 

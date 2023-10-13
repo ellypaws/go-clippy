@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func testUser(i int) (clippy.Award, clippy.Config) {
+func testUser(i int) (clippy.Award, clippy.User) {
 	return clippy.Award{
 			Username:        "TestUser" + strconv.Itoa(i),
 			Snowflake:       "SNOWFLAKE" + strconv.Itoa(i),
@@ -24,7 +24,7 @@ func testUser(i int) (clippy.Award, clippy.Config) {
 			OriginSnowflake: "SNOWFLAKE1" + strconv.Itoa(i),
 			InteractionID:   strconv.Itoa(rand.Int()),
 		},
-		clippy.Config{
+		clippy.User{
 			Username:  "TestUser" + strconv.Itoa(i),
 			Snowflake: "SNOWFLAKE" + strconv.Itoa(i),
 			OptOut:    false,
@@ -54,58 +54,14 @@ func recordAwards(runs int) {
 	}
 }
 
-func nonCached(runs int) {
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("NON CACHED (%v)", i), func() {
-			fmt.Println(clippy.Leaderboard(5))
-		})
-	}
-}
-
-func cached(runs int) {
-	timeTaken("CACHED (first run)", func() {
-		fmt.Println(clippy.LeaderboardCached(5))
-	})
-
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("CACHED (%v)", i), func() {
-			fmt.Println(clippy.LeaderboardCached(5))
-		})
-	}
-}
-
-func precached(runs int) {
+func precachedLeaderboard(runs int) {
 	timeTaken("PRECACHED (first run)", func() {
-		fmt.Println(clippy.LeaderboardPrecached(5))
+		fmt.Println(clippy.Cache.LeaderboardPrecached(5, clippy.Request{}))
 	})
 
 	for i := 0; i < runs; i++ {
 		timeTaken(fmt.Sprintf("PRECACHED (%v)", i), func() {
-			fmt.Println(clippy.LeaderboardPrecached(5))
-		})
-	}
-}
-
-func singleUser(runs int) {
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("SINGLE USER (%v)", i), func() {
-			fmt.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
-		})
-	}
-}
-
-func singleUserCached(runs int) {
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("SINGLE USER CACHED (%v)", i), func() {
-			fmt.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
-		})
-	}
-}
-
-func singleUserCached2(runs int) {
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("SINGLE USER CACHED (%v)", i), func() {
-			fmt.Println(clippy.CountTotalPointsCached("SNOWFLAKE2"))
+			fmt.Println(clippy.Cache.LeaderboardPrecached(5, clippy.Request{}))
 		})
 	}
 }
@@ -113,33 +69,17 @@ func singleUserCached2(runs int) {
 func singleUserPrecached(runs int) {
 	for i := 0; i < runs; i++ {
 		timeTaken(fmt.Sprintf("SINGLE USER PRECACHED (%v)", i), func() {
-			fmt.Println(clippy.CountTotalPointsGuildPrecached("SNOWFLAKE1"))
-		})
-	}
-}
-
-func singleUserPrecached2(runs int) {
-	for i := 0; i < runs; i++ {
-		timeTaken(fmt.Sprintf("SINGLE USER PRECACHED (%v)", i), func() {
-			fmt.Println(clippy.CountTotalPointsGuildPrecached("SNOWFLAKE2"))
+			fmt.Println(clippy.Cache.QueryPoints(clippy.Request{Snowflake: "SNOWFLAKE1"}))
 		})
 	}
 }
 
 func main() {
-	nonCached(1)
-	clippy.CacheMap.Reset()
-	cached(3)
-	clippy.CacheMap.Reset()
-	precached(3)
+	clippy.Cache.Reset()
+	precachedLeaderboard(3)
 
-	singleUser(3)
-	clippy.CacheMap.Reset()
-	singleUserCached(3)
-	singleUserCached2(3)
-	clippy.CacheMap.Reset()
+	//clippy.Cache.Reset()
 	singleUserPrecached(3)
-	singleUserPrecached2(3)
 
 	fmt.Println(out.String())
 

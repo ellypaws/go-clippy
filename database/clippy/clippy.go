@@ -3,7 +3,7 @@ package clippy
 import "github.com/nokusukun/bingo"
 
 var Collection *bingo.Collection[Award]
-var UserSettings *bingo.Collection[Config]
+var UserSettings *bingo.Collection[User]
 
 type Award struct {
 	Username        string `json:"username,omitempty"`
@@ -18,11 +18,12 @@ type Award struct {
 	InteractionID   string `json:"interaction_id,omitempty"`
 }
 
-type Config struct {
+type User struct {
 	Username  string `json:"username,omitempty"`
 	Snowflake string `json:"snowflake,omitempty"`
 	OptOut    bool   `json:"opt_out,omitempty"` // Assume that Private is true if OptOut is true
 	Private   bool   `json:"hide_points,omitempty"`
+	Points    int    `json:"points,omitempty"`
 }
 
 func (point Award) Key() []byte {
@@ -32,6 +33,6 @@ func (point Award) Key() []byte {
 	return []byte(point.InteractionID)
 }
 
-func (user Config) Key() []byte {
-	return []byte(user.Snowflake)
+func (config User) Key() []byte {
+	return []byte(config.Snowflake)
 }
