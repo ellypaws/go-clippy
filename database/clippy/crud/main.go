@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,76 +32,123 @@ func testUser(i int) (clippy.Award, clippy.Config) {
 		}
 }
 
+var out = strings.Builder{}
+
+func recordAwards(runs int) {
+	for i := 0; i < runs; i++ {
+		// random chance
+		switch rand.Intn(25) {
+		case 0:
+			testuser, testconfig := testUser(1)
+			testuser.Record()
+			testconfig.Record()
+		case 1:
+			testuser, testconfig := testUser(2)
+			testuser.Record()
+			testconfig.Record()
+		case 2:
+			testuser, testconfig := testUser(3)
+			testuser.Record()
+			testconfig.Record()
+		}
+	}
+}
+
+func nonCached(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("NON CACHED (%v)", i), func() {
+			fmt.Println(clippy.Leaderboard(5))
+		})
+	}
+}
+
+func cached(runs int) {
+	timeTaken("CACHED (first run)", func() {
+		fmt.Println(clippy.LeaderboardCached(5))
+	})
+
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("CACHED (%v)", i), func() {
+			fmt.Println(clippy.LeaderboardCached(5))
+		})
+	}
+}
+
+func precached(runs int) {
+	timeTaken("PRECACHED (first run)", func() {
+		fmt.Println(clippy.LeaderboardPrecached(5))
+	})
+
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("PRECACHED (%v)", i), func() {
+			fmt.Println(clippy.LeaderboardPrecached(5))
+		})
+	}
+}
+
+func singleUser(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("SINGLE USER (%v)", i), func() {
+			fmt.Println(clippy.CountTotalPoints("SNOWFLAKE1"))
+		})
+	}
+}
+
+func singleUserCached(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("SINGLE USER CACHED (%v)", i), func() {
+			fmt.Println(clippy.CountTotalPointsCached("SNOWFLAKE1"))
+		})
+	}
+}
+
+func singleUserCached2(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("SINGLE USER CACHED (%v)", i), func() {
+			fmt.Println(clippy.CountTotalPointsCached("SNOWFLAKE2"))
+		})
+	}
+}
+
+func singleUserPrecached(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("SINGLE USER PRECACHED (%v)", i), func() {
+			fmt.Println(clippy.CountTotalPointsGuildPrecached("SNOWFLAKE1"))
+		})
+	}
+}
+
+func singleUserPrecached2(runs int) {
+	for i := 0; i < runs; i++ {
+		timeTaken(fmt.Sprintf("SINGLE USER PRECACHED (%v)", i), func() {
+			fmt.Println(clippy.CountTotalPointsGuildPrecached("SNOWFLAKE2"))
+		})
+	}
+}
+
 func main() {
-	//for i := 0; i < 500; i++ {
-	//	// random chance
-	//	switch rand.Intn(25) {
-	//	case 0:
-	//		testuser, testconfig := testUser(1)
-	//		testuser.Record()
-	//		testconfig.Record()
-	//	case 1:
-	//		testuser, testconfig := testUser(2)
-	//		testuser.Record()
-	//		testconfig.Record()
-	//	case 2:
-	//		testuser, testconfig := testUser(3)
-	//		testuser.Record()
-	//		testconfig.Record()
-	//	}
-	//}
+	nonCached(1)
+	clippy.CacheMap.Reset()
+	cached(3)
+	clippy.CacheMap.Reset()
+	precached(3)
 
-	curTime := time.Now()
-	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Non cached:", time.Since(curTime))
+	singleUser(3)
+	clippy.CacheMap.Reset()
+	singleUserCached(3)
+	singleUserCached2(3)
+	clippy.CacheMap.Reset()
+	singleUserPrecached(3)
+	singleUserPrecached2(3)
 
-	curTime = time.Now()
-	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Non cached:", time.Since(curTime))
-
-	curTime = time.Now()
-	fmt.Println(clippy.Leaderboard(5))
-	fmt.Println("Non cached:", time.Since(curTime))
-
-	curTime = time.Now()
-	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Cached (first run):", time.Since(curTime))
-
-	curTime = time.Now()
-	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Cached:", time.Since(curTime))
-
-	curTime = time.Now()
-	fmt.Println(clippy.LeaderboardCached(5))
-	fmt.Println("Cached:", time.Since(curTime))
-
-	//clippy.CountTotalPoints("SNOWFLAKE1")
-	//
-	//clippy.CountTotalPointsCached("SNOWFLAKE1")
-
-	timeTaken(func() {
-		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
-	})
-	timeTaken(func() {
-		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
-	})
-	timeTaken(func() {
-		log.Println("NON CACHED", clippy.CountTotalPoints("SNOWFLAKE1"))
-	})
-	timeTaken(func() {
-		log.Println("CACHED (1)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
-	})
-	timeTaken(func() {
-		log.Println("CACHED (2)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
-	})
-	timeTaken(func() {
-		log.Println("CACHED (3)", clippy.CountTotalPointsCached("SNOWFLAKE1"))
-	})
+	fmt.Println(out.String())
 
 }
 
-func timeTaken(f func()) {
+func timeTaken(text string, f func()) {
 	start := time.Now()
 	f()
-	log.Println("Took", time.Since(start))
+	toPrint := fmt.Sprintln(text, "TOOK:", time.Since(start))
+	log.Println(toPrint)
+	out.WriteString(toPrint)
 }

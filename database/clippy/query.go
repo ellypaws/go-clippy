@@ -12,7 +12,7 @@ func (point Award) Record() {
 	if err != nil {
 		panic(err)
 	}
-	cached.updateAwards(&point)
+	CacheMap.updateAwards(&point)
 	//log.Println("Inserted", id)
 }
 
@@ -69,14 +69,6 @@ func CountTotalPoints(snowflake string) int {
 	return len(awardsSnowflake(snowflake))
 }
 
-func CountTotalPointsCached(snowflake string) int {
-	award, err := cached.getAward(snowflake)
-	if err != nil {
-		return 0
-	}
-	return len(award)
-}
-
 func awardsSnowflakeGuild(snowflake string, guild string) (point []*Award) {
 	result := Collection.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
@@ -90,12 +82,7 @@ func CountTotalPointsGuild(snowflake string, guild string) int {
 	return len(awardsSnowflakeGuild(snowflake, guild))
 }
 
-func CountTotalPointsGuildCached(snowflake string, guild string) int {
-	award := cached.awardsSnowflakeGuildCached(snowflake, guild)
-	return len(award)
-}
-
-func GetOptedInConfigs() (users []*Config) {
+func getOptedInConfigs() (users []*Config) {
 	result := UserSettings.Query(bingo.Query[Config]{
 		Filter: func(user Config) bool {
 			return !user.OptOut
@@ -188,42 +175,5 @@ func Leaderboard(max int, guild ...string) string {
 		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
 	}
 
-	return leaderboard
-}
-
-func LeaderboardCached(max int, guild ...string) string {
-	users := getPointsShowConfig()
-
-	// get all awards depending on guild
-	userPointsSlice = []userPoints{}
-	if len(guild) > 0 {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPointsGuildCached(u.Snowflake, guild[0]),
-			})
-		}
-	} else {
-		for _, u := range users {
-			userPointsSlice = append(userPointsSlice, userPoints{
-				Snowflake: u.Snowflake,
-				Username:  u.Username,
-				Points:    CountTotalPointsCached(u.Snowflake),
-			})
-		}
-	}
-
-	sortUserPoints(userPointsSlice)
-	if max == 0 {
-		max = len(userPointsSlice)
-	}
-	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
-
-	var leaderboard string = "Leaderboard:\n"
-	for i, user := range userPointsSlice {
-		leaderboard += fmt.Sprintf("%d. %v (%v)\n", i+1, user.Username, user.Points)
-	}
-
-	return leaderboard
+	return leaderboard[:len(leaderboard)-1]
 }
