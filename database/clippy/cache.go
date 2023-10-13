@@ -64,13 +64,6 @@ func (c cacheMap) precacheAwards(request Request) {
 		}
 	}
 	c.allAwards(request)
-
-	// TODO: Remove in production, ensure that we're always writing to both databases when recording an award
-	for _, user := range users {
-		if user.Points == 0 {
-			c.updatePoints(user.Snowflake)
-		}
-	}
 }
 
 func (c cacheMap) LeaderboardPrecached(max int, request Request) string {

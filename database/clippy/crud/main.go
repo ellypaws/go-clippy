@@ -75,11 +75,25 @@ func singleUserPrecached(runs int) {
 }
 
 func main() {
-	clippy.Cache.Reset()
-	precachedLeaderboard(3)
+	//clippy.Cache.Reset()
+	//precachedLeaderboard(3)
 
 	//clippy.Cache.Reset()
-	singleUserPrecached(3)
+	singleUserPrecached(1)
+
+	testuser, _ := testUser(1)
+	testuser.Record()
+	singleUserPrecached(1)
+
+	testuser.Record()
+	singleUserPrecached(1)
+
+	testuser.Record()
+	singleUserPrecached(1)
+
+	precachedLeaderboard(0)
+	clippy.Cache.Reset()
+	precachedLeaderboard(0)
 
 	fmt.Println(out.String())
 

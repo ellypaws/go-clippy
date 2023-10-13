@@ -17,6 +17,7 @@ func (point Award) Record() {
 		panic(err)
 	}
 	Cache.updateAwards(&point)
+	Cache.addPointRecord(Cache.GetConfig(point.Snowflake))
 	//log.Println("Inserted", id)
 }
 
@@ -27,6 +28,12 @@ func (config User) Record() {
 	}
 	Cache.updateConfig(config)
 	//fmt.Println("Inserted", id)
+}
+
+func (c cacheMap) addPointRecord(user User) {
+	user.Points++
+	c[user.Snowflake].Config.Points = user.Points
+	user.Record()
 }
 
 func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
@@ -79,9 +86,6 @@ func (c cacheMap) updateConfig(config User) {
 		c[config.Snowflake] = &CacheType{
 			Config: config,
 		}
-	}
-	if c[config.Snowflake].Config.Points == 0 {
-		c[config.Snowflake].Config.Points = c.countAwards(config.Snowflake)
 	}
 }
 
