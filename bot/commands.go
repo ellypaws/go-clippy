@@ -3,13 +3,15 @@ package discord
 import "github.com/bwmarrin/discordgo"
 
 const (
-	requiredFunction = iota
-	optionalFunctionAutocomplete
-	optionalDescriptionAutocomplete
-	optionalPlatformSelection
+	requiredFunction                = "function"
+	optionalFunctionAutocomplete    = "function-autocomplete"
+	optionalDescriptionAutocomplete = "description-autocomplete"
+	optionalPlatformSelection       = "platform-selection"
 
-	maskedUser
-	maskedChannel
+	maskedUser    = "user"
+	maskedChannel = "channel"
+	maskedForum   = "threads"
+	maskedRole    = "role"
 )
 
 const (
@@ -17,32 +19,33 @@ const (
 	solvedCommand   = "solved"
 	functionCommand = "function"
 	searchCommand   = "search"
+	addModerator    = "moderator"
 )
 
-var commandOptions = map[int]*discordgo.ApplicationCommandOption{
+var commandOptions = map[string]*discordgo.ApplicationCommandOption{
 	requiredFunction: {
 		Type:        discordgo.ApplicationCommandOptionString,
-		Name:        "function",
+		Name:        requiredFunction,
 		Description: "The function to look up",
 		Required:    true,
 	},
 	optionalFunctionAutocomplete: {
 		Type:         discordgo.ApplicationCommandOptionString,
-		Name:         "function",
+		Name:         optionalFunctionAutocomplete,
 		Description:  "The function to look up",
 		Required:     false,
 		Autocomplete: true,
 	},
 	optionalDescriptionAutocomplete: {
 		Type:         discordgo.ApplicationCommandOptionString,
-		Name:         "description",
+		Name:         optionalDescriptionAutocomplete,
 		Description:  "The description to look up",
 		Required:     false,
 		Autocomplete: true,
 	},
 	optionalPlatformSelection: {
 		Type:        discordgo.ApplicationCommandOptionString,
-		Name:        "platform",
+		Name:        optionalPlatformSelection,
 		Description: "Excel or Google Sheets",
 		Required:    false,
 		Choices: []*discordgo.ApplicationCommandOptionChoice{
@@ -58,23 +61,40 @@ var commandOptions = map[int]*discordgo.ApplicationCommandOption{
 	},
 }
 
-var maskedOptions = map[int]*discordgo.ApplicationCommandOption{
+var maskedOptions = map[string]*discordgo.ApplicationCommandOption{
 	maskedUser: {
 		Type:        discordgo.ApplicationCommandOptionUser,
-		Name:        "user-option",
-		Description: "User option",
+		Name:        maskedUser,
+		Description: "Choose a user",
 		Required:    false,
 	},
 	maskedChannel: {
 		Type:        discordgo.ApplicationCommandOptionChannel,
-		Name:        "channel-option",
-		Description: "Channel option",
+		Name:        maskedChannel,
+		Description: "Choose a channel to close",
 		// Channel type mask
 		ChannelTypes: []discordgo.ChannelType{
 			discordgo.ChannelTypeGuildText,
 			discordgo.ChannelTypeGuildVoice,
 		},
 		Required: false,
+	},
+	maskedForum: {
+		Type:        discordgo.ApplicationCommandOptionChannel,
+		Name:        maskedForum,
+		Description: "Choose a thread to mark as solved",
+		ChannelTypes: []discordgo.ChannelType{
+			discordgo.ChannelTypeGuildForum,
+			discordgo.ChannelTypeGuildNewsThread,
+			discordgo.ChannelTypeGuildPublicThread,
+			discordgo.ChannelTypeGuildPrivateThread,
+		},
+	},
+	maskedRole: {
+		Type:        discordgo.ApplicationCommandOptionRole,
+		Name:        maskedRole,
+		Description: "Choose a role to add",
+		Required:    false,
 	},
 }
 
@@ -85,18 +105,21 @@ var commands = map[string]*discordgo.ApplicationCommand{
 		// Commands/options without description will fail the registration
 		// of the command.
 		Description: "Say hello to the bot",
+		Type:        discordgo.ChatApplicationCommand,
 	},
 	solvedCommand: {
 		Name:        solvedCommand,
 		Description: "Mark a question as solved and optionally close the thread",
+		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			maskedOptions[maskedUser],
-			maskedOptions[maskedChannel],
+			maskedOptions[maskedForum],
 		},
 	},
 	functionCommand: {
 		Name:        functionCommand,
 		Description: "Look up a function in Excel or Google Sheets",
+		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			commandOptions[requiredFunction],
 			commandOptions[optionalPlatformSelection],
@@ -104,13 +127,18 @@ var commands = map[string]*discordgo.ApplicationCommand{
 	},
 	searchCommand: {
 		Name:        searchCommand,
-		Description: "Showcase of multiple autocomplete option",
+		Description: "Search for a function in Excel or Google Sheets",
 		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			commandOptions[optionalFunctionAutocomplete],
 			commandOptions[optionalDescriptionAutocomplete],
 			commandOptions[optionalPlatformSelection],
 		},
+	},
+	addModerator: {
+		Name:        addModerator,
+		Description: "Add a moderator role to the server",
+		Type:        discordgo.ChatApplicationCommand,
 	},
 }
 

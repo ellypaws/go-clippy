@@ -3,6 +3,7 @@ package discord
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"go-clippy/database/clippy"
 	"log"
 	"strconv"
 	"strings"
@@ -21,14 +22,44 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 			errorEphemeral(bot, i.Interaction, "This message is too old to award clippy points")
 			return
 		}
-		//log.Printf("[COMPONENT] InteractionCreate: %+v\n", i)
-		//log.Printf("[COMPONENT] InteractionCreate.Interaction: %+v\n", i.Interaction)
-		//log.Printf("[COMPONENT] InteractionCreate.Interaction.Message: %+v\n", i.Interaction.Message)
-		channels[i.Message.ID] <- true
-		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+i.MessageComponentData().Values[0]+">")
+
+		reply := i.MessageComponentData()
+		channels[i.Message.ID] <- reply.Values[0]
+		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
+
+		awarded, err := bot.User(reply.Values[0])
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
+
+		guild, err := bot.Guild(i.GuildID)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
+
+		channel, err := bot.Channel(i.ChannelID)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
+
+		clippy.Award{
+			Username:        awarded.Username,
+			Snowflake:       reply.Values[0],
+			GuildName:       guild.Name,
+			GuildID:         guild.ID,
+			Channel:         channel.Name,
+			ChannelID:       channel.ID,
+			MessageID:       i.Message.ID,
+			OriginUsername:  i.User.Username,
+			OriginSnowflake: i.User.ID,
+			InteractionID:   i.ID,
+		}.Record()
 	},
 	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		responses[ephemeralContentResponse].(msgResponseType)(bot, i.Interaction, "Already awarded to xyz")
+		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Already awarded to xyz")
 	},
 }
 
@@ -89,6 +120,35 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 	if errorContent == nil || len(errorContent) == 0 {
 		return
 	}
+	blankEmbed, toPrint := errorEmbed(errorContent, i)
+
+	_ = bot.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			// Note: this isn't documented, but you can use that if you want to.
+			// This flag just allows you to create messages visible only for the caller of the command
+			// (user who triggered the command)
+			Flags:   discordgo.MessageFlagsEphemeral,
+			Content: toPrint,
+			Embeds:  blankEmbed,
+		},
+	})
+}
+
+func errorEphemeralFollowup(bot *discordgo.Session, i *discordgo.Interaction, errorContent ...any) {
+	if errorContent == nil || len(errorContent) == 0 {
+		return
+	}
+	blankEmbed, toPrint := errorEmbed(errorContent, i)
+
+	_, _ = bot.FollowupMessageCreate(i, true, &discordgo.WebhookParams{
+		Content: *sanitizeToken(&toPrint),
+		Embeds:  blankEmbed,
+		Flags:   discordgo.MessageFlagsEphemeral,
+	})
+}
+
+func errorEmbed(errorContent []any, i *discordgo.Interaction) ([]*discordgo.MessageEmbed, string) {
 	var errorString string
 
 	switch content := errorContent[0].(type) {
@@ -106,7 +166,7 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 	// decode ED4245 to int
 	color, _ := strconv.ParseInt("ED4245", 16, 64)
 
-	blankEmbed := []*discordgo.MessageEmbed{
+	embed := []*discordgo.MessageEmbed{
 		{
 			Type: discordgo.EmbedTypeRich,
 			Fields: []*discordgo.MessageEmbedField{
@@ -120,36 +180,24 @@ func errorEphemeral(bot *discordgo.Session, i *discordgo.Interaction, errorConte
 		},
 	}
 
-	var action string
-	var id string
+	var toPrint string
 
 	switch i.Type {
 	case discordgo.InteractionApplicationCommand:
-		action = "command"
-		id = i.ApplicationCommandData().Name
+		toPrint = fmt.Sprintf(
+			"Could not run the [command](https://github.com/ellypaws/go-clippy) `%v`",
+			i.ApplicationCommandData().Name,
+		)
 	case discordgo.InteractionMessageComponent:
-		action = "button"
-		id = i.MessageComponentData().CustomID
+		toPrint = fmt.Sprintf(
+			"Could not run the [button](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
+			i.MessageComponentData().CustomID,
+			i.GuildID,
+			i.ChannelID,
+			i.Message.ID,
+		)
 	}
-
-	_ = bot.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			// Note: this isn't documented, but you can use that if you want to.
-			// This flag just allows you to create messages visible only for the caller of the command
-			// (user who triggered the command)
-			Flags: discordgo.MessageFlagsEphemeral & discordgo.MessageFlagsSupressEmbeds,
-			Content: fmt.Sprintf(
-				"Could not run the [%v](https://github.com/ellypaws/go-clippy) `%v` on message https://discord.com/channels/%v/%v/%v",
-				action,
-				id,
-				i.GuildID,
-				i.ChannelID,
-				i.Message.ID,
-			),
-			Embeds: blankEmbed,
-		},
-	})
+	return embed, toPrint
 }
 
 func sanitizeToken(errorString *string) *string {

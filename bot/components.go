@@ -14,8 +14,12 @@ const (
 	paginationButtons = "pagination_button"
 	okCancelButtons   = "ok_cancel_buttons"
 
-	awardUserSelect     = "clippy_award_user"
-	awardedUserSelected = "clippy_awarded"
+	awardUserSelect         = "clippy_award_user"
+	awardUserSelectDisabled = "clippy_award_user_disabled"
+	awardedUserSelected     = "clippy_awarded"
+	undoAward               = "clippy_undo"
+
+	roleSelect = "role_select"
 )
 
 var components = map[string]discordgo.MessageComponent{
@@ -98,6 +102,38 @@ var components = map[string]discordgo.MessageComponent{
 				CustomID:     awardUserSelect,
 				Placeholder:  "Pick a user to award a clippy point to",
 				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+			},
+		},
+	},
+
+	awardUserSelectDisabled: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.SelectMenu{
+				MenuType:     discordgo.UserSelectMenu,
+				CustomID:     awardUserSelect,
+				Placeholder:  "Pick a user to award a clippy point to",
+				ChannelTypes: []discordgo.ChannelType{discordgo.ChannelTypeGuildText},
+				Disabled:     true,
+			},
+		},
+	},
+
+	undoAward: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label:    "Undo",
+				Style:    discordgo.DangerButton,
+				CustomID: undoAward,
+			},
+		},
+	},
+
+	roleSelect: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.SelectMenu{
+				MenuType:    discordgo.RoleSelectMenu,
+				CustomID:    roleSelect,
+				Placeholder: "Pick a role",
 			},
 		},
 	},

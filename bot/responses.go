@@ -1,27 +1,35 @@
 package discord
 
-import "github.com/bwmarrin/discordgo"
+import (
+	"github.com/bwmarrin/discordgo"
+)
 
 const (
-	thinkResponse = iota
-	pendingResponse
-	messageResponse
+	thinkResponse   = iota // newResponseType Respond with a "Bot is thinking..." message
+	ephemeralThink         // newResponseType Respond with an ephemeral message saying "Bot is thinking..."
+	pendingResponse        // newResponseType Respond with a "Bot is responding..." message
+	messageResponse        // msgResponseType Respond with a message
 
-	followupResponse
-	followupEdit
+	followupResponse  // msgReturnType Send a followup message
+	followupEdit      // editResponseType Edit a followup message by providing a [*discordgo.Message]
+	ephemeralFollowup // msgReturnType Respond with an ephemeral followup message
 
-	editInteractionResponse
+	editMessage             // editResponseType Edit a [*discordgo.Message]
+	editInteractionResponse // msgReturnType Edit the interaction response message
+	editAwardSuggest        // msgReturnType Edit the interaction response message to suggest awarding a point to someone
 
-	ephemeralBotIsResponding
-	ephemeralContentResponse
-	ephemeralAwardSuggestion
+	ephemeralResponding    // newResponseType Respond with an ephemeral message saying "Bot is responding..."
+	ephemeralContent       // msgResponseType Respond with an ephemeral message with the provided content
+	ephemeralAward         // newReturnType Respond with an ephemeral message with a suggestion to award a point to someone
+	ephemeralAwardFollowup // msgReturnType Respond with an ephemeral followup message with a suggestion to award a point to someone
 
-	awardUserResponse
-	helloResponse
+	awardUserResponse // newResponseType Respond with a message saying "Awarded a point to user"
+	helloResponse     // newResponseType Respond with a message saying "Hey there! Congratulations, you just executed your first slash command"
 
-	ErrorResponse
-	ErrorFollowup
-	ErrorEphemeral
+	ErrorResponse          // [errorResponseType] Respond with an error message and a deletion button.
+	ErrorFollowup          // [errorResponseType] Respond with an error message as a followup message with a deletion button.
+	ErrorEphemeral         // [errorResponseType] Respond with an ephemeral error message and a deletion button.
+	ErrorFollowupEphemeral // [errorResponseType] Respond with an ephemeral error message as a followup message with a deletion button.
 
 	awardClippy
 )
@@ -30,7 +38,7 @@ type newResponseType func(bot *discordgo.Session, i *discordgo.InteractionCreate
 type newReturnType func(bot *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.Message
 type msgResponseType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any)
 type msgReturnType func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message
-type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction, messageToEdit *discordgo.Message, content ...any) *discordgo.Message
+type editResponseType func(bot *discordgo.Session, i *discordgo.Interaction, message *discordgo.Message, content ...any) *discordgo.Message
 type errorResponseType msgResponseType
 
 var responses = map[int]any{
@@ -38,6 +46,16 @@ var responses = map[int]any{
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 		})
+		if err != nil {
+			errorEphemeral(bot, i.Interaction, err)
+		}
+	}),
+	ephemeralThink: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Flags: discordgo.MessageFlagsEphemeral,
+			}})
 		if err != nil {
 			errorEphemeral(bot, i.Interaction, err)
 		}
@@ -76,6 +94,8 @@ var responses = map[int]any{
 				webhookParams.Content = content
 			case discordgo.MessageComponent:
 				webhookParams.Components = append(webhookParams.Components, content)
+			case discordgo.MessageFlags:
+				webhookParams.Flags = content
 			}
 		}
 		msg, err := bot.FollowupMessageCreate(i, true, &webhookParams)
@@ -86,6 +106,37 @@ var responses = map[int]any{
 	}),
 
 	followupEdit: editResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message *discordgo.Message, content ...any) *discordgo.Message {
+		webhookEdit := discordgo.WebhookEdit{}
+		contentEdit(&webhookEdit, message)
+		contentEdit(&webhookEdit, content...)
+
+		msg, err := bot.FollowupMessageEdit(i, message.Reference().MessageID, &webhookEdit)
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+		return msg
+	}),
+
+	ephemeralFollowup: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) *discordgo.Message {
+		webhookParams := discordgo.WebhookParams{
+			Flags: discordgo.MessageFlagsEphemeral,
+		}
+		for _, m := range message {
+			switch content := m.(type) {
+			case string:
+				webhookParams.Content = content
+			case discordgo.MessageComponent:
+				webhookParams.Components = append(webhookParams.Components, content)
+			}
+		}
+		msg, err := bot.FollowupMessageCreate(i, false, &webhookParams)
+		if err != nil {
+			errorFollowup(bot, i, err)
+		}
+		return msg
+	}),
+
+	editMessage: editResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message *discordgo.Message, content ...any) *discordgo.Message {
 		webhookEdit := discordgo.WebhookEdit{}
 		contentEdit(&webhookEdit, message)
 		contentEdit(&webhookEdit, content...)
@@ -108,7 +159,7 @@ var responses = map[int]any{
 		return msg
 	}),
 
-	ephemeralBotIsResponding: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	ephemeralResponding: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -123,7 +174,7 @@ var responses = map[int]any{
 			errorEdit(bot, i.Interaction, err)
 		}
 	}),
-	ephemeralContentResponse: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
+	ephemeralContent: msgResponseType(func(bot *discordgo.Session, i *discordgo.Interaction, message ...any) {
 		err := bot.InteractionRespond(i, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -138,7 +189,7 @@ var responses = map[int]any{
 			errorFollowup(bot, i, err)
 		}
 	}),
-	ephemeralAwardSuggestion: newReturnType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.Message {
+	ephemeralAward: newReturnType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) *discordgo.Message {
 		message := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -156,6 +207,42 @@ var responses = map[int]any{
 
 		interactionResponse, _ := bot.InteractionResponse(i.Interaction)
 		return interactionResponse
+	}),
+
+	ephemeralAwardFollowup: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message {
+		message := &discordgo.WebhookParams{
+			Content: "You haven't selected a user to award a point to.\n" +
+				"Do you want to award a point to someone?",
+			Flags:      discordgo.MessageFlagsEphemeral,
+			Components: []discordgo.MessageComponent{components[awardUserSelect]},
+		}
+
+		msg, err := bot.FollowupMessageCreate(i, true, message)
+		if err != nil {
+			errorEdit(bot, i, err)
+		}
+		return msg
+	}),
+
+	editAwardSuggest: msgReturnType(func(bot *discordgo.Session, i *discordgo.Interaction, content ...any) *discordgo.Message {
+
+		message := discordgo.WebhookParams{
+			Content: "You haven't selected a user to award a point to.\n" +
+				"Do you want to award a point to someone?",
+			Flags:      discordgo.MessageFlagsEphemeral,
+			Components: []discordgo.MessageComponent{components[awardUserSelect]},
+		}
+
+		edit := discordgo.WebhookEdit{
+			Content:    &message.Content,
+			Components: &message.Components,
+		}
+
+		msg, err := bot.InteractionResponseEdit(i, &edit)
+		if err != nil {
+			errorEphemeralFollowup(bot, i, err)
+		}
+		return msg
 	}),
 
 	awardUserResponse: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
@@ -176,9 +263,10 @@ var responses = map[int]any{
 	awardClippy: newResponseType(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	}),
-	ErrorResponse:  errorResponseType(errorEdit),
-	ErrorFollowup:  errorResponseType(errorFollowup),
-	ErrorEphemeral: errorResponseType(errorEphemeral),
+	ErrorResponse:          errorResponseType(errorEdit),
+	ErrorFollowup:          errorResponseType(errorFollowup),
+	ErrorEphemeral:         errorResponseType(errorEphemeral),
+	ErrorFollowupEphemeral: errorResponseType(errorEphemeralFollowup),
 }
 
 func contentEdit(webhookEdit *discordgo.WebhookEdit, messages ...any) {
