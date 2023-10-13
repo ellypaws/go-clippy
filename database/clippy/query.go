@@ -30,6 +30,13 @@ func (config User) Record() {
 	//fmt.Println("Inserted", id)
 }
 
+func (moderator Moderator) Record() {
+	_, err := Moderators.Insert(moderator, bingo.Upsert)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (c cacheMap) addPointRecord(user User) {
 	user.Points++
 	c[user.Snowflake].Config.Points = user.Points

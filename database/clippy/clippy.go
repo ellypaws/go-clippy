@@ -1,9 +1,12 @@
 package clippy
 
-import "github.com/nokusukun/bingo"
+import (
+	"github.com/nokusukun/bingo"
+)
 
 var Collection *bingo.Collection[Award]
 var UserSettings *bingo.Collection[User]
+var Moderators *bingo.Collection[Moderator]
 
 type Award struct {
 	Username        string `json:"username,omitempty"`
@@ -26,6 +29,13 @@ type User struct {
 	Points    int    `json:"points,omitempty"`
 }
 
+type Moderator struct {
+	GuildName string `json:"guild_name,omitempty"`
+	GuildID   string `json:"guild_id,omitempty"`
+	RoleName  string `json:"role_name,omitempty"`
+	RoleID    string `json:"role_id,omitempty"`
+}
+
 func (point Award) Key() []byte {
 	// nil because this not a keyed slice/collection
 	//return nil
@@ -35,4 +45,8 @@ func (point Award) Key() []byte {
 
 func (config User) Key() []byte {
 	return []byte(config.Snowflake)
+}
+
+func (moderator Moderator) Key() []byte {
+	return []byte(moderator.RoleID)
 }
