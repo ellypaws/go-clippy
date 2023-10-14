@@ -93,7 +93,12 @@ func Run() {
 	log.Println("Adding commands...")
 	registerCommands(bot)
 
-	defer bot.Close()
+	defer func(bot *discordgo.Session) {
+		err := bot.Close()
+		if err != nil {
+			log.Fatalf("Cannot close the session: %v", err)
+		}
+	}(bot)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
