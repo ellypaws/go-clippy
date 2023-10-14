@@ -67,6 +67,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		}
 
 		// check if thread is already solved
+		// TODO: Fix checking of thread already solved
 		re := regexp.MustCompile(`(?i)\b(re)?solved\b`)
 		appliedTags := st.AppliedTags
 		for _, tag := range appliedTags {
@@ -139,21 +140,23 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		if username == "" {
 			awardSuggest := responses[ephemeralAwardFollowup].(msgReturnType)(bot, i.Interaction)
 			channels[awardSuggest.ID] = make(chan string)
-			username = <-channels[awardSuggest.ID]
+			snowflake = <-channels[awardSuggest.ID]
 			responses[followupEdit].(editResponseType)(
 				bot,
 				i.Interaction,
 				awardSuggest,
-				fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", username, channel),
+				fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", snowflake, channel),
 				components[awardUserSelectDisabled],
+				// TODO: Edit or delete message after awarding
 				//components[undoAward],
 			)
 		} else {
-			responses[followupResponse].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", snowflake, channel))
+			responses[ephemeralFollowup].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", snowflake, channel))
+			// TODO: Edit or delete message after awarding
 		}
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
 			fmt.Sprintf("<#%v> "+
-				"is now solved and awarded to <@%v>", channel, username),
+				"is now solved and awarded to <@%v>", channel, snowflake),
 		)
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
