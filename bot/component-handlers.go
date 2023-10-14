@@ -5,6 +5,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"go-clippy/database/clippy"
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -20,16 +21,23 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 	awardUserSelect: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		if time.Now().Sub(i.Interaction.Message.Timestamp) > 5*time.Minute {
 			errorEphemeral(bot, i.Interaction, "This message is too old to award clippy points")
-			return
+			channels[i.Message.ID] <- []string{}
 		}
 
 		reply := i.MessageComponentData()
-		if i.Member.User.ID == reply.Values[0] {
+		if slices.Contains(reply.Values, i.Member.User.ID) {
 			errorEphemeral(bot, i.Interaction, "You can't award clippy points to yourself")
+			reply.Values = slices.DeleteFunc[[]string, string](reply.Values, func(snowflake string) bool {
+				return snowflake == i.Member.User.ID
+			})
 			return
 		}
-		channels[i.Message.ID] <- reply.Values[0]
-		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
+		channels[i.Message.ID] <- reply.Values
+		if len(reply.Values) == 1 {
+			responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
+		} else if len(reply.Values) > 1 {
+			responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding clippy points to <@"+strings.Join(reply.Values, ">, <@")+">")
+		}
 
 		recordAward(i)
 	},
@@ -51,40 +59,42 @@ func newConfig(awarded *discordgo.User) clippy.User {
 func recordAward(i *discordgo.InteractionCreate) {
 	reply := i.MessageComponentData()
 
-	awarded, err := bot.User(reply.Values[0])
-	if err != nil {
-		errorEdit(bot, i.Interaction, err)
-		return
-	}
+	for _, snowflake := range reply.Values {
+		awarded, err := bot.User(snowflake)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
 
-	if _, ok := clippy.GetCache().GetConfig(awarded.ID); !ok {
-		newConfig(awarded).Record()
-	}
+		if _, ok := clippy.GetCache().GetConfig(awarded.ID); !ok {
+			newConfig(awarded).Record()
+		}
 
-	guild, err := bot.Guild(i.GuildID)
-	if err != nil {
-		errorEdit(bot, i.Interaction, err)
-		return
-	}
+		guild, err := bot.Guild(i.GuildID)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
 
-	channel, err := bot.Channel(i.ChannelID)
-	if err != nil {
-		errorEdit(bot, i.Interaction, err)
-		return
-	}
+		channel, err := bot.Channel(i.ChannelID)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
 
-	clippy.Award{
-		Username:        awarded.Username,
-		Snowflake:       reply.Values[0],
-		GuildName:       guild.Name,
-		GuildID:         guild.ID,
-		Channel:         channel.Name,
-		ChannelID:       channel.ID,
-		MessageID:       i.Message.ID,
-		OriginUsername:  i.Member.User.Username,
-		OriginSnowflake: i.Member.User.ID,
-		InteractionID:   i.ID,
-	}.Record()
+		clippy.Award{
+			Username:        awarded.Username,
+			Snowflake:       snowflake,
+			GuildName:       guild.Name,
+			GuildID:         guild.ID,
+			Channel:         channel.Name,
+			ChannelID:       channel.ID,
+			MessageID:       i.Message.ID,
+			OriginUsername:  i.Member.User.Username,
+			OriginSnowflake: i.Member.User.ID,
+			InteractionID:   i.ID,
+		}.Record()
+	}
 }
 
 // errorFollowup [ErrorFollowup] sends an error message as a followup message with a deletion button.

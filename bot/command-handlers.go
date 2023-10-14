@@ -5,13 +5,14 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 )
 
 // Available methods for *discordgo.Session:
 
-var channels = map[string]chan string{
-	awardUserSelect: make(chan string), // Not really used, only for debugging
+var channels = map[string]chan []string{
+	awardUserSelect: make(chan []string), // Not really used, only for debugging
 }
 
 func getOpts(data discordgo.ApplicationCommandInteractionData) map[string]*discordgo.ApplicationCommandInteractionDataOption {
@@ -128,37 +129,48 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		//Award the user
 		var username string
-		var snowflake string
+		var snowflakes []string
 		if option, ok := optionMap[maskedUser]; ok {
 			val := option.UserValue(bot)
 			username = val.Username
 			if val.ID != "" {
-				snowflake = val.ID
-			} else {
-				snowflake = val.Username
+				snowflakes = append(snowflakes, val.ID)
 			}
 		}
 
 		if username == "" {
 			awardSuggest := responses[ephemeralAwardFollowup].(msgReturnType)(bot, i.Interaction)
-			channels[awardSuggest.ID] = make(chan string)
-			snowflake = <-channels[awardSuggest.ID]
+			if awardSuggest.ID == "" {
+				errorEdit(bot, i.Interaction, "Encountered an error while sending followup message.")
+				return
+			}
+			channels[awardSuggest.ID] = make(chan []string)
+			snowflakes = <-channels[awardSuggest.ID]
+
+			// delete the channel from the map
+			delete(channels, awardSuggest.ID)
+
+			if len(snowflakes) == 0 {
+				return
+			}
+
 			responses[followupEdit].(editResponseType)(
 				bot,
 				i.Interaction,
 				awardSuggest,
-				fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", snowflake, channel),
+				fmt.Sprintf("Awarding %v and closing channel <#%v>", "<@"+strings.Join(snowflakes, ">, <@")+">", channel),
 				components[awardUserSelectDisabled],
 				// TODO: Edit or delete message after awarding
 				//components[undoAward],
 			)
 		} else {
-			responses[ephemeralFollowup].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding <@%v> and closing channel <#%v>", snowflake, channel))
+			responses[ephemeralFollowup].(msgReturnType)(bot, i.Interaction,
+				fmt.Sprintf("Awarding %v and closing channel <#%v>", "<@"+strings.Join(snowflakes, ">, <@")+">", channel))
 			// TODO: Edit or delete message after awarding
 		}
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
-			fmt.Sprintf("<#%v> "+
-				"is now solved and awarded to <@%v>", channel, snowflake),
+			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel,
+				"<@"+strings.Join(snowflakes, ">, <@")+">"),
 		)
 	},
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
