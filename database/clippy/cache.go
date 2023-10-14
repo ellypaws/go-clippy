@@ -9,20 +9,22 @@ type CacheType struct {
 	Awards []*Award
 }
 
-type cacheMap map[string]*CacheType
-
-var Cache = NewCache()
-
-func NewCache() cacheMap {
-	return make(cacheMap)
+type Cache struct {
+	Map   map[string]*CacheType
+	Mutex *sync.RWMutex
 }
 
-func (c cacheMap) Reset() {
-	for k := range c {
-		delete(c, k)
+var cache Cache
+
+func GetCache() Cache {
+	return cache
+}
+
+func (c Cache) Reset() {
 	}
 }
-func (c cacheMap) Private(snowflake string) bool {
+
+func (c Cache) Private(snowflake string) bool {
 	user, exist := c.GetConfig(snowflake)
 	if !exist {
 		return false
@@ -30,7 +32,7 @@ func (c cacheMap) Private(snowflake string) bool {
 	return user.Private
 }
 
-func (c cacheMap) OptOut(snowflake string) bool {
+func (c Cache) OptOut(snowflake string) bool {
 	user, exist := c.GetConfig(snowflake)
 	if !exist {
 		return false
@@ -38,15 +40,13 @@ func (c cacheMap) OptOut(snowflake string) bool {
 	return user.OptOut
 }
 
-func (c cacheMap) countAwards(snowflake string) int {
-	if _, ok := c[snowflake]; !ok {
+func (c Cache) countAwards(snowflake string) int {
 		c.allAwards(Request{})
 	}
 	return len(c[snowflake].Awards)
 }
 
-func (c cacheMap) updatePoints(snowflake string) {
-	if _, ok := c[snowflake]; !ok {
+func (c Cache) updatePoints(snowflake string) {
 		c.GetConfig(snowflake)
 	} else {
 		c[snowflake].Config.Points = c.countAwards(snowflake)
@@ -54,7 +54,7 @@ func (c cacheMap) updatePoints(snowflake string) {
 	c[snowflake].Config.Record()
 }
 
-func (c cacheMap) QueryPoints(request Request) int {
+func (c Cache) QueryPoints(request Request) int {
 	if c.OptOut(request.Snowflake) || c.Private(request.Snowflake) {
 		return 0
 	}
@@ -64,7 +64,7 @@ func (c cacheMap) QueryPoints(request Request) int {
 	return c[request.Snowflake].Config.Points
 }
 
-func (c cacheMap) precacheAwards(request Request) {
+func (c Cache) precacheAwards(request Request) {
 	users := getPublicUsers()
 	for _, user := range users {
 		c[user.Snowflake] = &CacheType{
@@ -74,7 +74,7 @@ func (c cacheMap) precacheAwards(request Request) {
 	c.allAwards(request)
 }
 
-func (c cacheMap) LeaderboardPrecached(max int, request Request) string {
+func (c Cache) LeaderboardPrecached(max int, request Request) string {
 	users := getPublicUsers()
 	if len(Cache) == 0 {
 		c.precacheAwards(request)

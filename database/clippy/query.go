@@ -14,28 +14,28 @@ type Request struct {
 
 // Record records the user's point to the database
 // it first checks if the user is in the cache for the user points
-// it calls [cacheMap.updateAwards] to update the cache for the user's awards
-// then [cacheMap.addPointRecord] will be called to increment the user's points
+// it calls [Cache.updateAwards] to update the Cache for the user's awards
+// then [Cache.addPointRecord] will be called to increment the user's points
 // it will also call [User.Record] to record the new points in the database,
-// and then it will call [cacheMap.updateCachedConfig] to update the cache
+// and then it will call [Cache.updateCachedConfig] to update the Cache
 func (point Award) Record() {
 	_, err := Awards.Insert(point, bingo.Upsert)
 	if err != nil {
 		log.Println(err)
 	}
-	user, ok := Cache.GetConfig(point.Snowflake)
+	user, ok := GetCache().GetConfig(point.Snowflake)
 	if !ok {
 		return
 	}
-	Cache.updateAwards(&point)
-	Cache.addPointRecord(user)
+	GetCache().updateAwards(&point)
+	GetCache().addPointRecord(user)
 }
 
 // Record records the user's config to the database
 // it first checks if the user is in the cache for the user points
 // then it will update the cache as well
 func (config User) Record() {
-	user, exist := Cache.GetConfig(config.Snowflake)
+	user, exist := GetCache().GetConfig(config.Snowflake)
 	if exist {
 		config.Points = user.Points
 	}
@@ -43,7 +43,7 @@ func (config User) Record() {
 	if err != nil {
 		log.Println("Error recording user: ", err)
 	}
-	Cache.updateCachedConfig(config)
+	GetCache().updateCachedConfig(config)
 }
 
 func (moderator Moderator) Record() {
@@ -56,8 +56,7 @@ func (moderator Moderator) Record() {
 // addPointRecord adds a point to the user's record
 // it first checks if the user is in the cache for the user points
 // then [user.Record] will update the cache as well
-func (c cacheMap) addPointRecord(user User) {
-	if config := c[user.Snowflake]; config == nil {
+func (c Cache) addPointRecord(user User) {
 		var exist bool
 		user, exist = c.GetConfig(user.Snowflake)
 		if !exist {
@@ -70,8 +69,7 @@ func (c cacheMap) addPointRecord(user User) {
 	user.Record()
 }
 
-func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
-	result := Collection.Query(bingo.Query[Award]{
+func (c Cache) allAwards(request Request) *bingo.QueryResult[Award] {
 	result := Awards.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
 			snowflakeMatch := request.Snowflake == "" || point.Snowflake == request.Snowflake
@@ -85,8 +83,7 @@ func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
 	return result
 }
 
-func (c cacheMap) queryConfig(snowflake string) *bingo.QueryResult[User] {
-	result := UserSettings.Query(bingo.Query[User]{
+func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 	result := Users.Query(bingo.Query[User]{
 		//Filter: func(user User) bool {
 		//	return user.Snowflake == snowflake
@@ -103,8 +100,7 @@ func (c cacheMap) queryConfig(snowflake string) *bingo.QueryResult[User] {
 
 // updateAwards updates the cache for the user's awards
 // if a user is not in the cache, it will create a new entry and store the award
-func (c cacheMap) updateAwards(award *Award) {
-	if user, ok := c[award.Snowflake]; ok {
+func (c Cache) updateAwards(award *Award) {
 		user.Awards = append(user.Awards, award)
 	} else {
 		c[award.Snowflake] = &CacheType{
@@ -113,10 +109,9 @@ func (c cacheMap) updateAwards(award *Award) {
 	}
 }
 
-// cacheMap.updateCachedConfig updates the cached config for a user
+// Cache.updateCachedConfig updates the cached config for a user
 // if it's not in the cache, it will store the incoming config
-func (c cacheMap) updateCachedConfig(config User) {
-	if user, ok := c[config.Snowflake]; ok {
+func (c Cache) updateCachedConfig(config User) {
 		user.Config = config
 	} else {
 		c[config.Snowflake] = &CacheType{
@@ -127,8 +122,7 @@ func (c cacheMap) updateCachedConfig(config User) {
 
 // GetConfig returns the cached config for a user
 // if it's not in the cache, it will query the database
-func (c cacheMap) GetConfig(snowflake string) (user User, exist bool) {
-	if _, ok := c[snowflake]; !ok {
+func (c Cache) GetConfig(snowflake string) (user User, exist bool) {
 		config := c.queryConfig(snowflake)
 		if !config.Any() || config.Error != nil {
 			return User{}, false

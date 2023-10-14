@@ -53,7 +53,7 @@ func recordAward(i *discordgo.InteractionCreate) {
 		return
 	}
 
-	if _, ok := clippy.Cache.GetConfig(awarded.ID); !ok {
+	if _, ok := clippy.GetCache().GetConfig(awarded.ID); !ok {
 		newConfig(awarded).Record()
 	}
 
