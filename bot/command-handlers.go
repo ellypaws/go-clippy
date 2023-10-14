@@ -66,17 +66,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			return
 		}
 
-		// check if thread is already solved
-		// TODO: Fix checking of thread already solved
-		re := regexp.MustCompile(`(?i)\b(re)?solved\b`)
-		appliedTags := st.AppliedTags
-		for _, tag := range appliedTags {
-			if re.MatchString(tag) {
-				errorFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is already solved", channel))
-				return
-			}
-		}
-
+		// fetch forum
 		var validChannel bool
 		forum, err := bot.Channel(st.ParentID)
 		if err != nil {
@@ -96,17 +86,30 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			return
 		}
 
-		tags := forum.AvailableTags
-		if len(tags) == 0 {
+		availableTags := forum.AvailableTags
+		if len(availableTags) == 0 {
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> does not have any tags", forum.Name))
 			return
 		}
 		var tagsToApply []string
 
 		// Mark the thread as solved
-		for _, tag := range tags {
-			if re.MatchString(tag.Name) {
-				tagsToApply = append(tagsToApply, tag.ID)
+		re := regexp.MustCompile(`(?i)\b(re)?solved\b`)
+		for _, forumTag := range availableTags {
+			if re.MatchString(forumTag.Name) {
+
+				// check if channel already has this tag
+				channelAppliedTags := st.AppliedTags
+
+				for _, appliedTag := range channelAppliedTags {
+					if appliedTag == forumTag.ID {
+						errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is already solved", channel))
+						return
+					}
+				}
+
+				tagsToApply = append(tagsToApply, forumTag.ID)
+
 				_, err := bot.ChannelEdit(channel, &discordgo.ChannelEdit{
 					AppliedTags: &tagsToApply,
 				})
@@ -121,7 +124,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			}
 		}
 		if len(tagsToApply) == 0 {
-			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> does not have a valid tag.\n Available tags: %v", forum.ID, tags))
+			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> does not have a valid tag.\n Available tags: %v", forum.ID, availableTags))
 		}
 
 		//Award the user
