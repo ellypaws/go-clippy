@@ -60,20 +60,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			}
 		}
 
-		// check if thread author/forum author is the same as the one running the command
-		if st.OwnerID != i.Member.User.ID && !moderator {
-			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("You are not the owner of <#%v>", channel))
-			return
-		}
-
-		// fetch forum
 		var validChannel bool
-		forum, err := bot.Channel(st.ParentID)
-		if err != nil {
-			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("Encountered an error while fetching forum: %v", err))
-			return
-		}
-
 		validChannel = slices.Contains([]discordgo.ChannelType{
 			discordgo.ChannelTypeGuildForum,
 			discordgo.ChannelTypeGuildNewsThread,
@@ -83,6 +70,19 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		if !validChannel {
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is not a valid thread", channel))
+			return
+		}
+
+		// check if thread author/forum author is the same as the one running the command
+		if st.OwnerID != i.Member.User.ID && !moderator {
+			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("You are not the owner of <#%v>", channel))
+			return
+		}
+
+		// fetch forum
+		forum, err := bot.Channel(st.ParentID)
+		if err != nil {
+			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("Encountered an error while fetching forum: %v", err))
 			return
 		}
 
