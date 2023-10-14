@@ -266,6 +266,12 @@ var commands = map[string]*discordgo.ApplicationCommand{
 
 // ----- UNUSED OPTIONS -----
 
+//var (
+//	integerOptionMinValue          = 1.0
+//	dmPermission                   = false
+//	defaultMemberPermissions int64 = discordgo.PermissionManageServer
+//)
+
 //var unusedOptions = []*discordgo.ApplicationCommandOption{
 //	{
 //		Type:        discordgo.ApplicationCommandOptionInteger,

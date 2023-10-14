@@ -20,12 +20,6 @@ var (
 )
 
 var (
-	integerOptionMinValue          = 1.0
-	dmPermission                   = false
-	defaultMemberPermissions int64 = discordgo.PermissionManageServer
-)
-
-var (
 	bot                *discordgo.Session
 	registeredCommands map[string]*discordgo.ApplicationCommand
 )
