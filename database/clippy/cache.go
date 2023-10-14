@@ -2,6 +2,7 @@ package clippy
 
 import (
 	"fmt"
+	"sync"
 )
 
 type CacheType struct {
@@ -27,6 +28,10 @@ func GetCache() *Cache {
 }
 
 func (c Cache) Reset() {
+	c.Mutex.Lock()
+	defer c.Mutex.Unlock()
+	for k := range c.Map {
+		delete(c.Map, k)
 	}
 }
 
@@ -47,42 +52,63 @@ func (c Cache) OptOut(snowflake string) bool {
 }
 
 func (c Cache) countAwards(snowflake string) int {
+	c.Mutex.RLock()
+	_, ok := c.Map[snowflake]
+	c.Mutex.RUnlock()
+	if ok {
 		c.allAwards(Request{})
 	}
-	return len(c[snowflake].Awards)
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	return len(c.Map[snowflake].Awards)
 }
 
 func (c Cache) updatePoints(snowflake string) {
+	c.Mutex.RLock()
+	_, ok := c.Map[snowflake]
+	c.Mutex.RUnlock()
+	if ok {
 		c.GetConfig(snowflake)
 	} else {
-		c[snowflake].Config.Points = c.countAwards(snowflake)
+		c.Mutex.Lock()
+		c.Map[snowflake].Config.Points = c.countAwards(snowflake)
+		c.Mutex.Unlock()
 	}
-	c[snowflake].Config.Record()
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	c.Map[snowflake].Config.Record()
 }
 
 func (c Cache) QueryPoints(request Request) int {
 	if c.OptOut(request.Snowflake) || c.Private(request.Snowflake) {
 		return 0
 	}
-	if _, ok := c[request.Snowflake]; !ok {
+	c.Mutex.RLock()
+	_, ok := c.Map[request.Snowflake]
+	c.Mutex.RUnlock()
+	if ok {
 		c.GetConfig(request.Snowflake)
 	}
-	return c[request.Snowflake].Config.Points
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	return c.Map[request.Snowflake].Config.Points
 }
 
 func (c Cache) precacheAwards(request Request) {
 	users := getPublicUsers()
 	for _, user := range users {
-		c[user.Snowflake] = &CacheType{
+		c.Mutex.Lock()
+		c.Map[user.Snowflake] = &CacheType{
 			Config: *user,
 		}
+		c.Mutex.Unlock()
 	}
 	c.allAwards(request)
 }
 
 func (c Cache) LeaderboardPrecached(max int, request Request) string {
 	users := getPublicUsers()
-	if len(Cache) == 0 {
+	if len(c.Map) == 0 {
 		c.precacheAwards(request)
 	}
 

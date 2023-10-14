@@ -57,6 +57,10 @@ func (moderator Moderator) Record() {
 // it first checks if the user is in the Cache for the user points
 // then [user.Record] will update the Cache as well
 func (c Cache) addPointRecord(user User) {
+	c.Mutex.RLock()
+	_, ok := c.Map[user.Snowflake]
+	c.Mutex.RUnlock()
+	if !ok {
 		var exist bool
 		user, exist = c.GetConfig(user.Snowflake)
 		if !exist {
@@ -65,7 +69,9 @@ func (c Cache) addPointRecord(user User) {
 		}
 	}
 	user.Points++
-	c[user.Snowflake].Config.Points = user.Points
+	c.Mutex.Lock()
+	c.Map[user.Snowflake].Config.Points = user.Points
+	c.Mutex.Unlock()
 	user.Record()
 }
 
@@ -93,7 +99,9 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 		},
 	})
 	if !result.Any() {
-		c[snowflake] = &CacheType{}
+		c.Mutex.Lock()
+		c.Map[snowflake] = &CacheType{}
+		c.Mutex.Unlock()
 	}
 	return result
 }
@@ -101,9 +109,16 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 // updateAwards updates the Cache for the user's awards
 // if a user is not in the Cache, it will create a new entry and store the award
 func (c Cache) updateAwards(award *Award) {
+	c.Mutex.RLock()
+	user, ok := c.Map[award.Snowflake]
+	c.Mutex.RUnlock()
+
+	if ok {
 		user.Awards = append(user.Awards, award)
 	} else {
-		c[award.Snowflake] = &CacheType{
+		c.Mutex.Lock()
+		defer c.Mutex.Unlock()
+		c.Map[award.Snowflake] = &CacheType{
 			Awards: []*Award{award},
 		}
 	}
@@ -112,9 +127,16 @@ func (c Cache) updateAwards(award *Award) {
 // Cache.updateCachedConfig updates the cached config for a user
 // if it's not in the Cache, it will store the incoming config
 func (c Cache) updateCachedConfig(config User) {
+	c.Mutex.RLock()
+	user, ok := c.Map[config.Snowflake]
+	c.Mutex.RUnlock()
+
+	if ok {
 		user.Config = config
 	} else {
-		c[config.Snowflake] = &CacheType{
+		c.Mutex.Lock()
+		defer c.Mutex.Unlock()
+		c.Map[config.Snowflake] = &CacheType{
 			Config: config,
 		}
 	}
@@ -123,13 +145,20 @@ func (c Cache) updateCachedConfig(config User) {
 // GetConfig returns the cached config for a user
 // if it's not in the cache, it will query the database
 func (c Cache) GetConfig(snowflake string) (user User, exist bool) {
+	c.Mutex.RLock()
+	_, ok := c.Map[snowflake]
+	c.Mutex.RUnlock()
+
+	if !ok {
 		config := c.queryConfig(snowflake)
 		if !config.Any() || config.Error != nil {
 			return User{}, false
 		}
 		c.updateCachedConfig(*config.First())
 	}
-	return c[snowflake].Config, true
+	c.Mutex.RLock()
+	defer c.Mutex.RUnlock()
+	return c.Map[snowflake].Config, true
 }
 
 func getPublicUsers() (users []*User) {
