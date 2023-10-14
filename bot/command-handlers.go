@@ -28,9 +28,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		responses[helloResponse].(newResponseType)(bot, i)
 	},
 	solvedCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
-		optionMap := getOpts(i.ApplicationCommandData())
-
 		responses[thinkResponse].(newResponseType)(bot, i)
+		optionMap := getOpts(i.ApplicationCommandData())
 
 		var channel string
 		if option, ok := optionMap[maskedChannel]; ok {
