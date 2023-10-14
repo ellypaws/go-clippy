@@ -24,6 +24,10 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 		}
 
 		reply := i.MessageComponentData()
+		if i.Member.User.ID == reply.Values[0] {
+			errorEphemeral(bot, i.Interaction, "You can't award clippy points to yourself")
+			return
+		}
 		channels[i.Message.ID] <- reply.Values[0]
 		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
 
