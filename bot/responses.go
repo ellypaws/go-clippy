@@ -129,7 +129,7 @@ var responses = map[int]any{
 				webhookParams.Components = append(webhookParams.Components, content)
 			}
 		}
-		msg, err := bot.FollowupMessageCreate(i, false, &webhookParams)
+		msg, err := bot.FollowupMessageCreate(i, true, &webhookParams)
 		if err != nil {
 			errorFollowup(bot, i, err)
 		}
