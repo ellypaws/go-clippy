@@ -3,100 +3,12 @@ package discord
 import "github.com/bwmarrin/discordgo"
 
 const (
-	requiredFunction                = "function"
-	optionalFunctionAutocomplete    = "function-autocomplete"
-	optionalDescriptionAutocomplete = "description-autocomplete"
-	optionalPlatformSelection       = "platform-selection"
-
-	maskedUser    = "user"
-	maskedChannel = "channel"
-	maskedForum   = "threads"
-	maskedRole    = "role"
-)
-
-const (
 	helloCommand    = "hello"
 	solvedCommand   = "solved"
 	functionCommand = "function"
 	searchCommand   = "search"
 	addModerator    = "moderator"
 )
-
-var commandOptions = map[string]*discordgo.ApplicationCommandOption{
-	requiredFunction: {
-		Type:        discordgo.ApplicationCommandOptionString,
-		Name:        requiredFunction,
-		Description: "The function to look up",
-		Required:    true,
-	},
-	optionalFunctionAutocomplete: {
-		Type:         discordgo.ApplicationCommandOptionString,
-		Name:         optionalFunctionAutocomplete,
-		Description:  "The function to look up",
-		Required:     false,
-		Autocomplete: true,
-	},
-	optionalDescriptionAutocomplete: {
-		Type:         discordgo.ApplicationCommandOptionString,
-		Name:         optionalDescriptionAutocomplete,
-		Description:  "The description to look up",
-		Required:     false,
-		Autocomplete: true,
-	},
-	optionalPlatformSelection: {
-		Type:        discordgo.ApplicationCommandOptionString,
-		Name:        optionalPlatformSelection,
-		Description: "Excel or Google Sheets",
-		Required:    false,
-		Choices: []*discordgo.ApplicationCommandOptionChoice{
-			{
-				Name:  "Excel",
-				Value: "excel",
-			},
-			{
-				Name:  "Google Sheets",
-				Value: "sheets",
-			},
-		},
-	},
-}
-
-var maskedOptions = map[string]*discordgo.ApplicationCommandOption{
-	maskedUser: {
-		Type:        discordgo.ApplicationCommandOptionUser,
-		Name:        maskedUser,
-		Description: "Choose a user",
-		Required:    false,
-	},
-	maskedChannel: {
-		Type:        discordgo.ApplicationCommandOptionChannel,
-		Name:        maskedChannel,
-		Description: "Choose a channel to close",
-		// Channel type mask
-		ChannelTypes: []discordgo.ChannelType{
-			discordgo.ChannelTypeGuildText,
-			discordgo.ChannelTypeGuildVoice,
-		},
-		Required: false,
-	},
-	maskedForum: {
-		Type:        discordgo.ApplicationCommandOptionChannel,
-		Name:        maskedForum,
-		Description: "Choose a thread to mark as solved",
-		ChannelTypes: []discordgo.ChannelType{
-			discordgo.ChannelTypeGuildForum,
-			discordgo.ChannelTypeGuildNewsThread,
-			discordgo.ChannelTypeGuildPublicThread,
-			discordgo.ChannelTypeGuildPrivateThread,
-		},
-	},
-	maskedRole: {
-		Type:        discordgo.ApplicationCommandOptionRole,
-		Name:        maskedRole,
-		Description: "Choose a role to add",
-		Required:    false,
-	},
-}
 
 var commands = map[string]*discordgo.ApplicationCommand{
 	helloCommand: {
@@ -139,6 +51,96 @@ var commands = map[string]*discordgo.ApplicationCommand{
 		Name:        addModerator,
 		Description: "Add a moderator role to the server",
 		Type:        discordgo.ChatApplicationCommand,
+	},
+}
+
+const (
+	requiredFunction                = "function"
+	optionalFunctionAutocomplete    = "function-autocomplete"
+	optionalDescriptionAutocomplete = "description-autocomplete"
+	optionalPlatformSelection       = "platform-selection"
+)
+
+var commandOptions = map[string]*discordgo.ApplicationCommandOption{
+	requiredFunction: {
+		Type:        discordgo.ApplicationCommandOptionString,
+		Name:        requiredFunction,
+		Description: "The function to look up",
+		Required:    true,
+	},
+	optionalFunctionAutocomplete: {
+		Type:         discordgo.ApplicationCommandOptionString,
+		Name:         optionalFunctionAutocomplete,
+		Description:  "The function to look up",
+		Required:     false,
+		Autocomplete: true,
+	},
+	optionalDescriptionAutocomplete: {
+		Type:         discordgo.ApplicationCommandOptionString,
+		Name:         optionalDescriptionAutocomplete,
+		Description:  "The description to look up",
+		Required:     false,
+		Autocomplete: true,
+	},
+	optionalPlatformSelection: {
+		Type:        discordgo.ApplicationCommandOptionString,
+		Name:        optionalPlatformSelection,
+		Description: "Excel or Google Sheets",
+		Required:    false,
+		Choices: []*discordgo.ApplicationCommandOptionChoice{
+			{
+				Name:  "Excel",
+				Value: "excel",
+			},
+			{
+				Name:  "Google Sheets",
+				Value: "sheets",
+			},
+		},
+	},
+}
+
+const (
+	maskedUser    = "user"
+	maskedChannel = "channel"
+	maskedForum   = "threads"
+	maskedRole    = "role"
+)
+
+var maskedOptions = map[string]*discordgo.ApplicationCommandOption{
+	maskedUser: {
+		Type:        discordgo.ApplicationCommandOptionUser,
+		Name:        maskedUser,
+		Description: "Choose a user",
+		Required:    false,
+	},
+	maskedChannel: {
+		Type:        discordgo.ApplicationCommandOptionChannel,
+		Name:        maskedChannel,
+		Description: "Choose a channel to close",
+		// Channel type mask
+		ChannelTypes: []discordgo.ChannelType{
+			discordgo.ChannelTypeGuildText,
+			discordgo.ChannelTypeGuildVoice,
+		},
+		Required: false,
+	},
+	maskedForum: {
+		Type:        discordgo.ApplicationCommandOptionChannel,
+		Name:        maskedForum,
+		Description: "Choose a thread to mark as solved",
+		ChannelTypes: []discordgo.ChannelType{
+			discordgo.ChannelTypeGuildForum,
+			discordgo.ChannelTypeGuildNewsThread,
+			discordgo.ChannelTypeGuildPublicThread,
+			discordgo.ChannelTypeGuildPrivateThread,
+		},
+	},
+	maskedRole: {
+		Type:        discordgo.ApplicationCommandOptionRole,
+		Name:        maskedRole,
+		Description: "Choose a role to add",
+		Required:    false,
 	},
 }
 
