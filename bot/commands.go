@@ -109,7 +109,7 @@ var commands = map[string]*discordgo.ApplicationCommand{
 	},
 	solvedCommand: {
 		Name:        solvedCommand,
-		Description: "Mark a question as solved and optionally close the thread",
+		Description: "Mark a question as solved and optionally award a user",
 		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
 			maskedOptions[maskedUser],
