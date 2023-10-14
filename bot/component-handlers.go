@@ -27,40 +27,60 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 		channels[i.Message.ID] <- reply.Values[0]
 		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
 
-		awarded, err := bot.User(reply.Values[0])
-		if err != nil {
-			errorEdit(bot, i.Interaction, err)
-			return
-		}
-
-		guild, err := bot.Guild(i.GuildID)
-		if err != nil {
-			errorEdit(bot, i.Interaction, err)
-			return
-		}
-
-		channel, err := bot.Channel(i.ChannelID)
-		if err != nil {
-			errorEdit(bot, i.Interaction, err)
-			return
-		}
-
-		clippy.Award{
-			Username:        awarded.Username,
-			Snowflake:       reply.Values[0],
-			GuildName:       guild.Name,
-			GuildID:         guild.ID,
-			Channel:         channel.Name,
-			ChannelID:       channel.ID,
-			MessageID:       i.Message.ID,
-			OriginUsername:  i.User.Username,
-			OriginSnowflake: i.User.ID,
-			InteractionID:   i.ID,
-		}.Record()
+		recordAward(i)
 	},
 	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Already awarded to xyz")
 	},
+}
+
+func newConfig(awarded *discordgo.User) clippy.User {
+	return clippy.User{
+		Username:  awarded.Username,
+		Snowflake: awarded.ID,
+		OptOut:    false,
+		Private:   false,
+		Points:    1,
+	}
+}
+
+func recordAward(i *discordgo.InteractionCreate) {
+	reply := i.MessageComponentData()
+
+	awarded, err := bot.User(reply.Values[0])
+	if err != nil {
+		errorEdit(bot, i.Interaction, err)
+		return
+	}
+
+	if _, ok := clippy.Cache.GetConfig(awarded.ID); !ok {
+		newConfig(awarded).Record()
+	}
+
+	guild, err := bot.Guild(i.GuildID)
+	if err != nil {
+		errorEdit(bot, i.Interaction, err)
+		return
+	}
+
+	channel, err := bot.Channel(i.ChannelID)
+	if err != nil {
+		errorEdit(bot, i.Interaction, err)
+		return
+	}
+
+	clippy.Award{
+		Username:        awarded.Username,
+		Snowflake:       reply.Values[0],
+		GuildName:       guild.Name,
+		GuildID:         guild.ID,
+		Channel:         channel.Name,
+		ChannelID:       channel.ID,
+		MessageID:       i.Message.ID,
+		OriginUsername:  i.User.Username,
+		OriginSnowflake: i.User.ID,
+		InteractionID:   i.ID,
+	}.Record()
 }
 
 // errorFollowup [ErrorFollowup] sends an error message as a followup message with a deletion button.
