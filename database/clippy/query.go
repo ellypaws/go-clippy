@@ -54,8 +54,8 @@ func (moderator Moderator) Record() {
 }
 
 // addPointRecord adds a point to the user's record
-// it first checks if the user is in the cache for the user points
-// then [user.Record] will update the cache as well
+// it first checks if the user is in the Cache for the user points
+// then [user.Record] will update the Cache as well
 func (c Cache) addPointRecord(user User) {
 		var exist bool
 		user, exist = c.GetConfig(user.Snowflake)
@@ -98,8 +98,8 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 	return result
 }
 
-// updateAwards updates the cache for the user's awards
-// if a user is not in the cache, it will create a new entry and store the award
+// updateAwards updates the Cache for the user's awards
+// if a user is not in the Cache, it will create a new entry and store the award
 func (c Cache) updateAwards(award *Award) {
 		user.Awards = append(user.Awards, award)
 	} else {
@@ -110,7 +110,7 @@ func (c Cache) updateAwards(award *Award) {
 }
 
 // Cache.updateCachedConfig updates the cached config for a user
-// if it's not in the cache, it will store the incoming config
+// if it's not in the Cache, it will store the incoming config
 func (c Cache) updateCachedConfig(config User) {
 		user.Config = config
 	} else {

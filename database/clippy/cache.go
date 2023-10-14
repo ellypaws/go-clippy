@@ -14,10 +14,16 @@ type Cache struct {
 	Mutex *sync.RWMutex
 }
 
-var cache Cache
+var cache *Cache
 
-func GetCache() Cache {
-	return cache
+func GetCache() *Cache {
+	if cache != nil {
+		return cache
+	}
+	return &Cache{
+		Map:   map[string]*CacheType{},
+		Mutex: &sync.RWMutex{},
+	}
 }
 
 func (c Cache) Reset() {
