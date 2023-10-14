@@ -14,8 +14,8 @@ var db *bingo.Driver
 
 func init() {
 	db = getDriver()
-	clippy.Collection = bingo.CollectionFrom[clippy.Award](db, "clippy")
-	clippy.UserSettings = bingo.CollectionFrom[clippy.User](db, "config")
+	clippy.Awards = bingo.CollectionFrom[clippy.Award](db, "clippy")
+	clippy.Users = bingo.CollectionFrom[clippy.User](db, "users")
 	clippy.Moderators = bingo.CollectionFrom[clippy.Moderator](db, "moderators")
 	functions.SheetsCollection = bingo.CollectionFrom[functions.Function](db, "sheets")
 	functions.ExcelCollection = bingo.CollectionFrom[functions.Function](db, "excel")

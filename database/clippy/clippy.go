@@ -4,8 +4,8 @@ import (
 	"github.com/nokusukun/bingo"
 )
 
-var Collection *bingo.Collection[Award]
-var UserSettings *bingo.Collection[User]
+var Awards *bingo.Collection[Award]
+var Users *bingo.Collection[User]
 var Moderators *bingo.Collection[Moderator]
 
 type Award struct {

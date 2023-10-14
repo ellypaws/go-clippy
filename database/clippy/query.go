@@ -19,7 +19,7 @@ type Request struct {
 // it will also call [User.Record] to record the new points in the database,
 // and then it will call [cacheMap.updateCachedConfig] to update the cache
 func (point Award) Record() {
-	_, err := Collection.Insert(point, bingo.Upsert)
+	_, err := Awards.Insert(point, bingo.Upsert)
 	if err != nil {
 		log.Println(err)
 	}
@@ -39,7 +39,7 @@ func (config User) Record() {
 	if exist {
 		config.Points = user.Points
 	}
-	_, err := UserSettings.Insert(config, bingo.Upsert)
+	_, err := Users.Insert(config, bingo.Upsert)
 	if err != nil {
 		log.Println("Error recording user: ", err)
 	}
@@ -72,6 +72,7 @@ func (c cacheMap) addPointRecord(user User) {
 
 func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
 	result := Collection.Query(bingo.Query[Award]{
+	result := Awards.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
 			snowflakeMatch := request.Snowflake == "" || point.Snowflake == request.Snowflake
 			guildIDMatch := request.GuildID == "" || point.GuildID == request.GuildID
@@ -86,6 +87,7 @@ func (c cacheMap) allAwards(request Request) *bingo.QueryResult[Award] {
 
 func (c cacheMap) queryConfig(snowflake string) *bingo.QueryResult[User] {
 	result := UserSettings.Query(bingo.Query[User]{
+	result := Users.Query(bingo.Query[User]{
 		//Filter: func(user User) bool {
 		//	return user.Snowflake == snowflake
 		//},
@@ -137,7 +139,7 @@ func (c cacheMap) GetConfig(snowflake string) (user User, exist bool) {
 }
 
 func getPublicUsers() (users []*User) {
-	result := UserSettings.Query(bingo.Query[User]{
+	result := Users.Query(bingo.Query[User]{
 		Filter: func(user User) bool {
 			return !user.Private
 		},
