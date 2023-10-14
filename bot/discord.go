@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
+	_ "go-clippy/database"
 	"log"
 	"os"
 	"os/signal"
