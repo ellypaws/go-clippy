@@ -23,11 +23,19 @@ func (c cacheMap) Reset() {
 	}
 }
 func (c cacheMap) Private(snowflake string) bool {
-	return c.GetConfig(snowflake).Private
+	user, exist := c.GetConfig(snowflake)
+	if !exist {
+		return false
+	}
+	return user.Private
 }
 
 func (c cacheMap) OptOut(snowflake string) bool {
-	return c.GetConfig(snowflake).OptOut
+	user, exist := c.GetConfig(snowflake)
+	if !exist {
+		return false
+	}
+	return user.OptOut
 }
 
 func (c cacheMap) countAwards(snowflake string) int {
