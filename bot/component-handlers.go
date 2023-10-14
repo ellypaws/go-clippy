@@ -77,8 +77,8 @@ func recordAward(i *discordgo.InteractionCreate) {
 		Channel:         channel.Name,
 		ChannelID:       channel.ID,
 		MessageID:       i.Message.ID,
-		OriginUsername:  i.User.Username,
-		OriginSnowflake: i.User.ID,
+		OriginUsername:  i.Member.User.Username,
+		OriginSnowflake: i.Member.User.ID,
 		InteractionID:   i.ID,
 	}.Record()
 }
