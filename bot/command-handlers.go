@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"go-clippy/database/clippy"
 	"regexp"
 	"slices"
 	"strings"
@@ -194,6 +195,103 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 				"<@"+strings.Join(snowflakes, ">, <@")+">"),
 		)
 	},
+
+	// awardMessage is similar to solvedCommand, but we don't need to mark the thread as solved
+	// this is a right-click context menu where we can run it on a message directly
+	// we grab the channel ID from the message and check the type as before to make sure it's valid
+	// we check the author of the message to make sure it's the same as the one running the command
+	// then we grab the author of the message and check if it's not the same as the one running the command
+	// then we award the user
+	awardMessage: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		responses[thinkResponse].(newResponseType)(bot, i)
+
+		resolved := i.ApplicationCommandData().Resolved
+
+		var channel string
+		var messageID string
+		var authorSnowflake string
+		var authorUsername string
+		for key, message := range resolved.Messages {
+			messageID = key
+			channel = message.ChannelID
+			authorSnowflake = message.Author.ID
+			authorUsername = message.Author.Username
+		}
+
+		st, err := bot.Channel(channel)
+		if err != nil {
+			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("Encountered an error while fetching channel: %v", err))
+			return
+		}
+
+		// grab the channel type and check if it's valid
+		var validChannel bool
+		validChannel = slices.Contains([]discordgo.ChannelType{
+			discordgo.ChannelTypeGuildForum,
+			discordgo.ChannelTypeGuildNewsThread,
+			discordgo.ChannelTypeGuildPublicThread,
+			discordgo.ChannelTypeGuildPrivateThread,
+		}, st.Type)
+
+		if !validChannel {
+			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is not a valid thread", channel))
+			return
+		}
+
+		// check if user is the same as the one running the command
+		if authorSnowflake == i.Member.User.ID {
+			errorEphemeralFollowup(bot, i.Interaction, "You can't award clippy points to yourself")
+			return
+		}
+
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding clippy points to <@%v>",
+			authorSnowflake))
+
+		// TODO: We can probably extract this
+		if _, ok := clippy.GetCache().GetConfig(authorSnowflake); !ok {
+			clippy.User{
+				Username:  authorUsername,
+				Snowflake: authorSnowflake,
+				OptOut:    false,
+				Private:   false,
+				Points:    1,
+			}.Record()
+		}
+
+		guild, err := bot.Guild(i.GuildID)
+		if err != nil {
+			errorEdit(bot, i.Interaction, err)
+			return
+		}
+
+		// TODO: We can probably extract this
+		// check if award already exists
+		a := clippy.Awards.FindByKeys(authorSnowflake + "/" + st.ID)
+		if len(a) > 0 {
+			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
+				fmt.Sprintf("<@%v> already has clippy points in <#%v>", authorSnowflake, st.ID),
+				components[deleteButton],
+			)
+			return
+		}
+
+		clippy.Award{
+			Username:        authorUsername,
+			Snowflake:       authorSnowflake,
+			GuildName:       guild.Name,
+			GuildID:         guild.ID,
+			Channel:         st.Name,
+			ChannelID:       st.ID,
+			MessageID:       messageID,
+			OriginUsername:  i.Member.User.Username,
+			OriginSnowflake: i.Member.User.ID,
+			InteractionID:   i.ID,
+		}.Record()
+
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarded clippy points to <@%v>",
+			authorSnowflake))
+	},
+
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 
 		responses[thinkResponse].(newResponseType)(bot, i)
