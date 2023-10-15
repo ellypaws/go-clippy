@@ -41,6 +41,7 @@ func GetCollection(platform string) *bingo.Collection[Function] {
 		return SheetsCollection
 	case "excel":
 		return ExcelCollection
+	default:
+		return ExcelCollection
 	}
-	return nil
 }
