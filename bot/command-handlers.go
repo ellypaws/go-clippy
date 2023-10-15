@@ -139,6 +139,11 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			}
 		}
 
+		if slices.Contains(snowflakes, i.Member.User.ID) {
+			errorEphemeralFollowup(bot, i.Interaction, "You can't award clippy points to yourself")
+			return
+		}
+
 		if username == "" {
 			awardSuggest := responses[ephemeralAwardFollowup].(msgReturnType)(bot, i.Interaction)
 			if awardSuggest.ID == "" {
