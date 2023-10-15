@@ -131,7 +131,7 @@ func registerHandlers(bot *discordgo.Session) {
 	bot.AddHandler(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		// commands
-		case discordgo.InteractionApplicationCommand:
+		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
 				h(bot, i)
 			}
