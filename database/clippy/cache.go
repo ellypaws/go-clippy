@@ -55,7 +55,7 @@ func (c Cache) countAwards(snowflake string) int {
 	c.Mutex.RLock()
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
-	if ok {
+	if !ok || c.Map[snowflake].Awards == nil {
 		c.allAwards(Request{})
 	}
 	c.Mutex.RLock()
@@ -63,20 +63,34 @@ func (c Cache) countAwards(snowflake string) int {
 	return len(c.Map[snowflake].Awards)
 }
 
-func (c Cache) updatePoints(snowflake string) {
+func (c Cache) synchronizePoints(snowflake string) {
 	c.Mutex.RLock()
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
-	if ok {
+	if !ok {
 		c.GetConfig(snowflake)
-	} else {
-		c.Mutex.Lock()
-		c.Map[snowflake].Config.Points = c.countAwards(snowflake)
-		c.Mutex.Unlock()
 	}
+	c.Mutex.RLock()
+	configPoints := c.Map[snowflake].Config.Points
+	c.Mutex.RUnlock()
+	countedAwards := c.countAwards(snowflake)
+	if configPoints == countedAwards {
+		return
+	}
+	c.Mutex.Lock()
+	c.Map[snowflake].Config.Points = countedAwards
+	c.Mutex.Unlock()
+
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
 	c.Map[snowflake].Config.Record()
+}
+
+func (c Cache) SynchronizeAllPoints() {
+	users := getAllUsers()
+	for _, user := range users {
+		c.synchronizePoints(user.Snowflake)
+	}
 }
 
 func (c Cache) QueryPoints(request Request) int {
