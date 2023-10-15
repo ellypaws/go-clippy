@@ -59,7 +59,7 @@ func (moderator Moderator) Record() {
 // then [user.Record] will update the Cache as well
 func (c Cache) addPointRecord(user *User) {
 	c.Mutex.RLock()
-	_, ok := c.Map[user.Snowflake]
+	u, ok := c.Map[user.Snowflake]
 	c.Mutex.RUnlock()
 	if !ok {
 		var exist bool
@@ -68,10 +68,19 @@ func (c Cache) addPointRecord(user *User) {
 			log.Printf("User %v does not exist", user.Snowflake)
 			return
 		}
+		c.Mutex.RLock()
+		u = c.Map[user.Snowflake]
+		c.Mutex.RUnlock()
 	}
 	log.Println("current points: ", user.Points)
 	user.Points++
 	log.Println("new points: ", user.Points)
+
+	c.synchronizePoints(user.Snowflake)
+	if user.Points != u.Config.Points {
+		log.Printf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)
+	}
+
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
 	c.Mutex.Unlock()
