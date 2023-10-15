@@ -148,7 +148,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		if username == "" {
 			awardSuggest := responses[ephemeralAwardFollowup].(msgReturnType)(bot, i.Interaction)
-			if awardSuggest.ID == "" {
+			if awardSuggest == nil || awardSuggest.ID == "" {
 				errorEdit(bot, i.Interaction, "Encountered an error while sending followup message.")
 				return
 			}
