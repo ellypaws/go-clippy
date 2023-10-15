@@ -57,9 +57,29 @@ func newConfig(awarded *discordgo.User) clippy.User {
 }
 
 func recordAward(i *discordgo.InteractionCreate) {
-	reply := i.MessageComponentData()
+	var snowflakes []string
+	switch i.Type {
+	case discordgo.InteractionMessageComponent:
+		reply := i.MessageComponentData()
+		if len(reply.Values) == 0 {
+			return
+		}
+		for _, snowflake := range reply.Values {
+			snowflakes = append(snowflakes, snowflake)
+		}
+	case discordgo.InteractionApplicationCommand:
+		optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
+		for _, option := range i.ApplicationCommandData().Options {
+			optionMap[option.Name] = option
+		}
 
-	for _, snowflake := range reply.Values {
+		if option, ok := optionMap[maskedUser]; ok {
+			val := option.UserValue(bot)
+			snowflakes = append(snowflakes, val.ID)
+		}
+	}
+
+	for _, snowflake := range snowflakes {
 		awarded, err := bot.User(snowflake)
 		if err != nil {
 			errorEdit(bot, i.Interaction, err)
