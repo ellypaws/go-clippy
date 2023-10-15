@@ -187,6 +187,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			responses[ephemeralFollowup].(msgReturnType)(bot, i.Interaction,
 				fmt.Sprintf("Awarding %v and closing channel <#%v>", "<@"+strings.Join(snowflakes, ">, <@")+">", channel))
 			// TODO: Edit or delete message after awarding
+			recordAward(i)
 		}
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
 			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel,
