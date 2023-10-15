@@ -35,10 +35,11 @@ func (point Award) Record() {
 // it first checks if the user is in the cache for the user points
 // then it will update the cache as well
 func (config User) Record() {
-	user, exist := GetCache().GetConfig(config.Snowflake)
-	if exist {
-		config.Points = user.Points
-	}
+	// We shouldn't grab from cache again since we're updating with new values
+	//user, exist := GetCache().GetConfig(config.Snowflake)
+	//if exist {
+	//	config.Points = user.Points
+	//}
 	_, err := Users.Insert(config, bingo.Upsert)
 	if err != nil {
 		log.Println("Error recording user: ", err)
@@ -56,7 +57,7 @@ func (moderator Moderator) Record() {
 // addPointRecord adds a point to the user's record
 // it first checks if the user is in the Cache for the user points
 // then [user.Record] will update the Cache as well
-func (c Cache) addPointRecord(user User) {
+func (c Cache) addPointRecord(user *User) {
 	c.Mutex.RLock()
 	_, ok := c.Map[user.Snowflake]
 	c.Mutex.RUnlock()
@@ -68,10 +69,13 @@ func (c Cache) addPointRecord(user User) {
 			return
 		}
 	}
+	log.Println("current points: ", user.Points)
 	user.Points++
+	log.Println("new points: ", user.Points)
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
 	c.Mutex.Unlock()
+	log.Println("recording user: ", user)
 	user.Record()
 }
 
@@ -144,7 +148,7 @@ func (c Cache) updateCachedConfig(config User) {
 
 // GetConfig returns the cached config for a user
 // if it's not in the cache, it will query the database
-func (c Cache) GetConfig(snowflake string) (user User, exist bool) {
+func (c Cache) GetConfig(snowflake string) (user *User, exist bool) {
 	c.Mutex.RLock()
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
@@ -152,13 +156,13 @@ func (c Cache) GetConfig(snowflake string) (user User, exist bool) {
 	if !ok {
 		config := c.queryConfig(snowflake)
 		if !config.Any() || config.Error != nil {
-			return User{}, false
+			return &User{}, false
 		}
 		c.updateCachedConfig(*config.First())
 	}
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
-	return c.Map[snowflake].Config, true
+	return &c.Map[snowflake].Config, true
 }
 
 func getPublicUsers() (users []*User) {
