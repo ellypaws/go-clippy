@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"go-clippy/database/clippy"
+	"log"
 	"regexp"
 	"slices"
 	"strings"
@@ -221,6 +222,10 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		st, err := bot.Channel(channel)
 		if err != nil {
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("Encountered an error while fetching channel: %v", err))
+			err := bot.InteractionResponseDelete(i.Interaction)
+			if err != nil {
+				log.Printf("Encountered an error while deleting interaction response: %v", err)
+			}
 			return
 		}
 
@@ -235,12 +240,19 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		if !validChannel {
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is not a valid thread", channel))
+			err := bot.InteractionResponseDelete(i.Interaction)
+			if err != nil {
+				log.Printf("Encountered an error while deleting interaction response: %v", err)
+			}
 			return
 		}
 
 		// check if user is the same as the one running the command
 		if authorSnowflake == i.Member.User.ID {
-			errorEphemeralFollowup(bot, i.Interaction, "You can't award clippy points to yourself")
+			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
+				"You can't award clippy points to yourself",
+				components[deleteButton],
+			)
 			return
 		}
 
