@@ -2,9 +2,12 @@ package discord
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/sahilm/fuzzy"
 	"go-clippy/database/clippy"
+	"go-clippy/database/functions"
 	"log"
 	"regexp"
 	"slices"
@@ -305,20 +308,81 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 	},
 
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		switch i.Type {
+		case discordgo.InteractionApplicationCommand:
+			data := i.ApplicationCommandData()
+			responses[thinkResponse].(newResponseType)(bot, i)
+			f, _ := functions.GetFunction(data.Options[0].StringValue(), functions.GetCollection("excel"))
+			b, _ := json.MarshalIndent(f, "", "  ")
+			// ensure we're under 2000 char limit
+			if len(b) > 2000 {
+				b = b[:2000]
+			}
+			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, string(b), components[deleteButton])
+		// Autocomplete options introduce a new interaction type (8) for returning custom autocomplete results.
+		case discordgo.InteractionApplicationCommandAutocomplete:
+			data := i.ApplicationCommandData()
 
-		responses[thinkResponse].(newResponseType)(bot, i)
-		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Testing editing response")
-		time.Sleep(time.Second * 2)
-		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, "Now with a button", components[okCancelButtons])
+			userInput := data.Options[0].StringValue()
 
-		msg := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Testing followup message", components[paginationButtons])
-		time.Sleep(time.Second * 2)
-		responses[followupEdit].(editResponseType)(bot, i.Interaction, msg, "Editing followup message")
+			var choices []*discordgo.ApplicationCommandOptionChoice
+			if userInput != "" {
+				log.Printf("Querying for %v", data.Options[0].StringValue())
 
-		time.Sleep(time.Second * 2)
-		a := responses[followupResponse].(msgReturnType)(bot, i.Interaction, "Now let's see if we're deleting the correct message")
-		time.Sleep(time.Second * 2)
-		responses[followupEdit].(editResponseType)(bot, i.Interaction, a, components[deleteButton])
+				cache := functions.Cached(functions.GetCollection("excel"))
+				results := fuzzy.FindFrom(userInput, cache)
+
+				for i, r := range results {
+					if i > 25 {
+						break
+					}
+					var nameToUse string
+					switch {
+					case cache[r.Index].Syntax.Layout != "":
+						nameToUse = cache[r.Index].Syntax.Layout
+					case cache[r.Index].Syntax.Raw != "":
+						nameToUse = cache[r.Index].Syntax.Raw
+					default:
+						nameToUse = cache[r.Index].Name
+					}
+
+					choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+						Name:  nameToUse,
+						Value: cache[r.Index].Name,
+					})
+				}
+			} else {
+				choices = []*discordgo.ApplicationCommandOptionChoice{
+					{
+						Name:  "Type a function name",
+						Value: "placeholder",
+					},
+				}
+			}
+
+			if userInput != "" {
+				choices = append(choices[:min(24, len(choices))], &discordgo.ApplicationCommandOptionChoice{
+					Name:  userInput,
+					Value: userInput,
+				})
+			}
+
+			// make sure we're under 100 char limit and under 25 choices
+			for i, choice := range choices {
+				if len(choice.Name) > 100 {
+					choices[i].Name = choice.Name[:100]
+				}
+			}
+			err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+				Data: &discordgo.InteractionResponseData{
+					Choices: choices[:min(25, len(choices))], // This is basically the whole purpose of autocomplete interaction - return custom options to the user.
+				},
+			})
+			if err != nil {
+				panic(err)
+			}
+		}
 	},
 
 	searchCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {

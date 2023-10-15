@@ -65,3 +65,18 @@ func Cached(collection *bingo.Collection[Function]) Cache {
 	}
 	return items
 }
+
+func (c Cache) String(i int) string {
+	switch {
+	case c[i].Syntax.Layout != "":
+		return c[i].Syntax.Layout
+	case c[i].Syntax.Raw != "":
+		return c[i].Syntax.Raw
+	default:
+		return c[i].Name
+	}
+}
+
+func (c Cache) Len() int {
+	return len(c)
+}
