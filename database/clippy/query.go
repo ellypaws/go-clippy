@@ -177,6 +177,18 @@ func getPublicUsers() (users []*User) {
 	return users
 }
 
+func getAllUsers() (users []*User) {
+	result := Users.Query(bingo.Query[User]{
+		Filter: func(user User) bool {
+			return true
+		},
+	})
+	for _, user := range result.Items {
+		users = append(users, user)
+	}
+	return users
+}
+
 type userPoints struct {
 	Snowflake string
 	Username  string
