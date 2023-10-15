@@ -40,7 +40,7 @@ func (point Award) Key() []byte {
 	// nil because this not a keyed slice/collection
 	//return nil
 	//return []byte(point.Snowflake + point.MessageID)
-	return []byte(point.Snowflake + "/" + point.InteractionID)
+	return []byte(point.Snowflake + "/" + point.ChannelID)
 }
 
 func (config User) Key() []byte {
