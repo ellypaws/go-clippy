@@ -34,7 +34,7 @@ var commands = map[string]*discordgo.ApplicationCommand{
 		Description: "Look up a function in Excel or Google Sheets",
 		Type:        discordgo.ChatApplicationCommand,
 		Options: []*discordgo.ApplicationCommandOption{
-			commandOptions[requiredFunction],
+			commandOptions[requiredFunctionAutocomplete],
 			commandOptions[optionalPlatformSelection],
 		},
 	},
@@ -61,10 +61,11 @@ var commands = map[string]*discordgo.ApplicationCommand{
 }
 
 const (
-	requiredFunction                = "function"
-	optionalFunctionAutocomplete    = "function-autocomplete"
-	optionalDescriptionAutocomplete = "description-autocomplete"
-	optionalPlatformSelection       = "platform-selection"
+	requiredFunction                = "func"
+	requiredFunctionAutocomplete    = "f"
+	optionalFunctionAutocomplete    = "opt-function-autocomplete"
+	optionalDescriptionAutocomplete = "opt-description-autocomplete"
+	optionalPlatformSelection       = "opt-platform-selection"
 )
 
 var commandOptions = map[string]*discordgo.ApplicationCommandOption{
@@ -73,6 +74,13 @@ var commandOptions = map[string]*discordgo.ApplicationCommandOption{
 		Name:        requiredFunction,
 		Description: "The function to look up",
 		Required:    true,
+	},
+	requiredFunctionAutocomplete: {
+		Type:         discordgo.ApplicationCommandOptionString,
+		Name:         requiredFunctionAutocomplete,
+		Description:  "The function to look up",
+		Required:     true,
+		Autocomplete: true,
 	},
 	optionalFunctionAutocomplete: {
 		Type:         discordgo.ApplicationCommandOptionString,
