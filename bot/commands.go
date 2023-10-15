@@ -8,6 +8,7 @@ const (
 	functionCommand = "function"
 	searchCommand   = "search"
 	addModerator    = "moderator"
+	awardMessage    = "award"
 )
 
 var commands = map[string]*discordgo.ApplicationCommand{
@@ -51,6 +52,11 @@ var commands = map[string]*discordgo.ApplicationCommand{
 		Name:        addModerator,
 		Description: "Add a moderator role to the server",
 		Type:        discordgo.ChatApplicationCommand,
+	},
+	// TODO: Implement the handler
+	awardMessage: {
+		Name: awardMessage,
+		Type: discordgo.MessageApplicationCommand,
 	},
 }
 
