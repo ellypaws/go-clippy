@@ -40,3 +40,28 @@ func QueryFunction(s string, collection *bingo.Collection[Function]) *bingo.Quer
 		},
 	})
 }
+
+var cache Cache
+
+type Cache []Function
+
+func Cached(collection *bingo.Collection[Function]) Cache {
+	if cache != nil {
+		return cache
+	}
+	result := collection.Query(bingo.Query[Function]{
+		Filter: func(doc Function) bool {
+			return true
+		},
+	})
+	if !result.Any() {
+		return []Function{}
+	}
+	var items []Function
+	for _, i := range result.Items {
+		if i != nil {
+			items = append(items, *i)
+		}
+	}
+	return items
+}
