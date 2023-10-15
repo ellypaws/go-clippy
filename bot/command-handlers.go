@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"regexp"
@@ -145,9 +146,23 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 				return
 			}
 			channels[awardSuggest.ID] = make(chan []string)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			go func() {
+				select {
+				case <-time.After(5 * time.Minute):
+					channels[awardSuggest.ID] <- []string{}
+				case <-ctx.Done():
+					return
+				}
+			}()
+
 			snowflakes = <-channels[awardSuggest.ID]
 
-			// delete the channel from the map
+			cancel()
+
+			// close channel and delete from map
+			close(channels[awardSuggest.ID])
 			delete(channels, awardSuggest.ID)
 
 			if len(snowflakes) == 0 {
