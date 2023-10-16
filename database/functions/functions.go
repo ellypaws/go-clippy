@@ -19,12 +19,13 @@ type Function struct {
 }
 
 type Syntax struct {
-	Layout string          `json:"layout,omitempty"`
-	Raw    string          `json:"raw,omitempty"`
-	Args   map[string]Args `json:"args,omitempty"`
+	Layout string `json:"layout,omitempty"`
+	Raw    string `json:"raw,omitempty"`
+	Args   []Args `json:"args,omitempty"`
 }
 
 type Args struct {
+	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
 	Variadic    bool   `json:"variadic,omitempty"`
