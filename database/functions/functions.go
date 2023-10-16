@@ -10,7 +10,7 @@ var SheetsCollection *bingo.Collection[Function]
 type Function struct {
 	Name        string   `json:"name,omitempty"`
 	Category    string   `json:"category,omitempty"`
-	Syntax      Syntax   `json:"args,omitempty"`
+	Syntax      Syntax   `json:"syntax,omitempty"`
 	Example     string   `json:"example,omitempty"`
 	Description string   `json:"description,omitempty"`
 	URL         string   `json:"url,omitempty"`
