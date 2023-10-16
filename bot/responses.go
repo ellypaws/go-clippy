@@ -287,8 +287,9 @@ func contentEdit(webhookEdit *discordgo.WebhookEdit, messages ...any) {
 		case discordgo.MessageEmbed:
 			newEmbeds = append(newEmbeds, &c)
 		case discordgo.MessageComponent:
-			//log.Println("Component: ", c)
 			newComponents = append(newComponents, c)
+		case []discordgo.MessageComponent:
+			newComponents = append(newComponents, c...)
 		}
 	}
 	if len(newComponents) > 0 {
