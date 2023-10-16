@@ -55,21 +55,21 @@ func QueryKey(s string, collection *bingo.Collection[Function]) *bingo.QueryResu
 	})
 }
 
-var cache Cache
+var cache = make(map[string]Cache)
 
 type Cache []Function
 
-func Cached(collection *bingo.Collection[Function]) Cache {
-	if cache != nil {
-		return cache
+func Cached(platform string) Cache {
+	if c, ok := cache[platform]; ok {
+		return c
 	}
-	result := collection.Query(bingo.Query[Function]{
+	result := GetCollection(platform).Query(bingo.Query[Function]{
 		Filter: func(doc Function) bool {
 			return true
 		},
 	})
 	if !result.Any() {
-		return []Function{}
+		return Cache([]Function{})
 	}
 	var items []Function
 	for _, i := range result.Items {
@@ -77,7 +77,8 @@ func Cached(collection *bingo.Collection[Function]) Cache {
 			items = append(items, *i)
 		}
 	}
-	return items
+	cache[platform] = Cache(items)
+	return Cache(items)
 }
 
 func (c Cache) String(i int) string {

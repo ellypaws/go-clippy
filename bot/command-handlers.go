@@ -308,29 +308,63 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 	},
 
 	functionCommand: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+		optionMap := getOpts(i.ApplicationCommandData())
+		var input string
+		var platform = "excel"
+		var defaultURL = "https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188"
+		if option, ok := optionMap[requiredFunctionAutocomplete]; ok {
+			input = option.StringValue()
+		}
+		if option, ok := optionMap[optionalPlatformSelection]; ok {
+			platform = option.StringValue()
+		}
+		if platform == "sheets" {
+			defaultURL = "https://support.google.com/docs/table/25273?hl=en"
+		}
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
-			data := i.ApplicationCommandData()
-			responses[thinkResponse].(newResponseType)(bot, i)
-			f, _ := functions.GetFunction(data.Options[0].StringValue(), functions.GetCollection("excel"))
+			f, err := functions.GetCollection(platform).FindByKey(strings.ToUpper(input))
+			if err != nil {
+				responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
+					fmt.Sprintf("[Function](%v) `%v` is not found", defaultURL, input),
+					components[deleteButton])
+				return
+			}
 			b, _ := json.MarshalIndent(f, "", "  ")
 			// ensure we're under 2000 char limit
 			if len(b) > 2000 {
 				b = b[:2000]
 			}
-			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, string(b), components[deleteButton])
-		// Autocomplete options introduce a new interaction type (8) for returning custom autocomplete results.
+			if f.URL == "" {
+				f.URL = defaultURL
+			}
+			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, string(b),
+				discordgo.ActionsRow{[]discordgo.MessageComponent{
+					discordgo.Button{
+						Label: "Read more",
+						Style: discordgo.LinkButton,
+						Emoji: discordgo.ComponentEmoji{
+							Name: "📜",
+						},
+						URL: f.URL,
+					},
+					discordgo.Button{
+						Label:    "Delete",
+						Style:    discordgo.DangerButton,
+						CustomID: deleteButton,
+						Emoji: discordgo.ComponentEmoji{
+							Name: "🗑️",
+						},
+					},
+					// Autocomplete options introduce a new interaction type (8) for returning custom autocomplete results.
+				}})
 		case discordgo.InteractionApplicationCommandAutocomplete:
-			data := i.ApplicationCommandData()
-
-			userInput := data.Options[0].StringValue()
-
 			var choices []*discordgo.ApplicationCommandOptionChoice
-			if userInput != "" {
-				log.Printf("Querying for %v", data.Options[0].StringValue())
+			if input != "" {
+				log.Printf("Querying for [%v](%v) %v", platform, defaultURL, input)
 
-				cache := functions.Cached(functions.GetCollection("excel"))
-				results := fuzzy.FindFrom(userInput, cache)
+				cache := functions.Cached(platform)
+				results := fuzzy.FindFrom(input, cache)
 
 				for i, r := range results {
 					if i > 25 {
@@ -358,10 +392,10 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 				}
 			}
 
-			if userInput != "" {
+			if input != "" {
 				choices = append(choices[:min(24, len(choices))], &discordgo.ApplicationCommandOptionChoice{
-					Name:  userInput,
-					Value: userInput,
+					Name:  input,
+					Value: input,
 				})
 			}
 
@@ -371,15 +405,12 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 					choices[i].Name = choice.Name[:100]
 				}
 			}
-			err := bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			_ = bot.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionApplicationCommandAutocompleteResult,
 				Data: &discordgo.InteractionResponseData{
 					Choices: choices[:min(25, len(choices))], // This is basically the whole purpose of autocomplete interaction - return custom options to the user.
 				},
 			})
-			if err != nil {
-				panic(err)
-			}
 		}
 	},
 
