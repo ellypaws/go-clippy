@@ -19,17 +19,17 @@ type Function struct {
 }
 
 type Syntax struct {
-	Layout string `json:"layout,omitempty"`
-	Raw    string `json:"raw,omitempty"`
+	Layout string `json:"layout"`
+	Raw    string `json:"raw"`
 	Args   []Args `json:"args,omitempty"`
 }
 
 type Args struct {
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
-	Variadic    bool   `json:"variadic,omitempty"`
-	Optional    bool   `json:"optional,omitempty"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Type        string `json:"type"` // string, int, boolean, range, array, function (lambda)
+	Variadic    bool   `json:"variadic"`
+	Optional    bool   `json:"optional"`
 }
 
 func (f Function) Key() []byte {
