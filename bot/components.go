@@ -8,6 +8,7 @@ const (
 	deleteButton  = "delete_error_message"
 	dismissButton = "dismiss_error_message"
 	urlButton     = "url_button"
+	urlDelete     = "url_delete"
 
 	readmoreDismiss = "readmore_dismiss"
 
@@ -35,9 +36,27 @@ var components = map[string]discordgo.MessageComponent{
 	urlButton: discordgo.ActionsRow{
 		Components: []discordgo.MessageComponent{
 			discordgo.Button{
-				Label:    "Read more",
-				Style:    discordgo.LinkButton,
-				CustomID: urlButton,
+				Label: "Read more",
+				Style: discordgo.LinkButton,
+			},
+		},
+	},
+	urlDelete: discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.Button{
+				Label: "Read more",
+				Style: discordgo.LinkButton,
+				Emoji: discordgo.ComponentEmoji{
+					Name: "📜",
+				},
+			},
+			discordgo.Button{
+				Label:    "Delete",
+				Style:    discordgo.DangerButton,
+				CustomID: deleteButton,
+				Emoji: discordgo.ComponentEmoji{
+					Name: "🗑️",
+				},
 			},
 		},
 	},
