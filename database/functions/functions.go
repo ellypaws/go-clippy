@@ -2,6 +2,7 @@ package functions
 
 import (
 	"github.com/nokusukun/bingo"
+	"strings"
 )
 
 var ExcelCollection *bingo.Collection[Function]
@@ -33,7 +34,7 @@ type Args struct {
 }
 
 func (f Function) Key() []byte {
-	return []byte(f.Name)
+	return []byte(strings.ToUpper(f.Name))
 }
 
 func GetCollection(platform string) *bingo.Collection[Function] {

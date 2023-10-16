@@ -26,7 +26,7 @@ func RecordMany(f []Function, collection *bingo.Collection[Function]) {
 }
 
 func GetFunction(s string, collection *bingo.Collection[Function]) (*Function, error) {
-	q := QueryFunction(s, collection)
+	q := QueryFunction(strings.ToUpper(s), collection)
 	if q.Error != nil {
 		return nil, q.Error
 	}
@@ -36,7 +36,7 @@ func GetFunction(s string, collection *bingo.Collection[Function]) (*Function, e
 func QueryFunction(s string, collection *bingo.Collection[Function]) *bingo.QueryResult[Function] {
 	return collection.Query(bingo.Query[Function]{
 		Filter: func(doc Function) bool {
-			return strings.Contains(strings.ToLower(doc.Name), strings.ToLower(s))
+			return strings.Contains(doc.Name, s)
 		},
 	})
 }
