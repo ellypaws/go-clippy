@@ -340,8 +340,6 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 					switch {
 					case cache[r.Index].Syntax.Layout != "":
 						nameToUse = cache[r.Index].Syntax.Layout
-					case cache[r.Index].Syntax.Raw != "":
-						nameToUse = cache[r.Index].Syntax.Raw
 					default:
 						nameToUse = cache[r.Index].Name
 					}
