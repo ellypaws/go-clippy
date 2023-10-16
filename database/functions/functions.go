@@ -9,9 +9,9 @@ var ExcelCollection *bingo.Collection[Function]
 var SheetsCollection *bingo.Collection[Function]
 
 type Function struct {
-	Name        string   `json:"name,omitempty"`
+	Name        string   `json:"name"`
 	Category    string   `json:"category,omitempty"`
-	Syntax      Syntax   `json:"syntax,omitempty"`
+	Syntax      Syntax   `json:"syntax"`
 	Example     string   `json:"example,omitempty"`
 	Description string   `json:"description,omitempty"`
 	URL         string   `json:"url,omitempty"`
