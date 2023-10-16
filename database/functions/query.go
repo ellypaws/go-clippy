@@ -41,6 +41,20 @@ func QueryFunction(s string, collection *bingo.Collection[Function]) *bingo.Quer
 	})
 }
 
+func GetByKey(s string, collection *bingo.Collection[Function]) (*Function, error) {
+	q := QueryKey(strings.ToUpper(s), collection)
+	if q.Error != nil {
+		return nil, q.Error
+	}
+	return q.First(), nil
+}
+
+func QueryKey(s string, collection *bingo.Collection[Function]) *bingo.QueryResult[Function] {
+	return collection.Query(bingo.Query[Function]{
+		Keys: [][]byte{[]byte(s)},
+	})
+}
+
 var cache Cache
 
 type Cache []Function
