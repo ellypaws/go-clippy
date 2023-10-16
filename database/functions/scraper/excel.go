@@ -153,7 +153,7 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *function
 
 	function.Syntax.Layout = strings.TrimSpace(syntaxSection.Find("p").First().Text())
 
-	function.Syntax.Args = map[string]functions.Args{}
+	function.Syntax.Args = []functions.Args{}
 	if len(section) < 3 {
 		return
 	}
@@ -206,11 +206,12 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *function
 		}
 
 		// Add the argument to the Syntax.Args map
-		function.Syntax.Args[argName] = functions.Args{
+		function.Syntax.Args = append(function.Syntax.Args, functions.Args{
+			Name:        argName,
 			Description: description,
 			Type:        argType,
 			Variadic:    variadic,
 			Optional:    optional,
-		}
+		})
 	}
 }
