@@ -63,9 +63,9 @@ var commands = map[string]*discordgo.ApplicationCommand{
 const (
 	requiredFunction                = "func"
 	requiredFunctionAutocomplete    = "f"
-	optionalFunctionAutocomplete    = "opt-function-autocomplete"
-	optionalDescriptionAutocomplete = "opt-description-autocomplete"
-	optionalPlatformSelection       = "opt-platform-selection"
+	optionalFunctionAutocomplete    = "opt-function"
+	optionalDescriptionAutocomplete = "opt-description"
+	optionalPlatformSelection       = "platform"
 )
 
 var commandOptions = map[string]*discordgo.ApplicationCommandOption{
