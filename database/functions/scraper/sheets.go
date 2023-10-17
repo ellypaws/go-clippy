@@ -110,34 +110,54 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	function.Syntax.Layout = syntaxLayout
 
 	// Extract and format the raw content for Discord
-	rawContent := []string{}
-	targetSection.Find("h3").Each(func(i int, s *goquery.Selection) {
-		// Extract the heading text
-		headingText := s.Text()
-
-		// Format the heading
-		rawContent = append(rawContent, "### "+headingText)
-
-		// Check if there's a <code> element after the heading
-		codeText := s.Next().Find("code").Text()
-		if codeText != "" {
-			rawContent = append(rawContent, "`"+codeText+"`")
-		}
-
-		// Check if there's a <ul> element after the heading
-		ul := s.Next().Find("ul")
-		if ul.Length() > 0 {
-			ulItems := ul.Find("li").Map(func(i int, li *goquery.Selection) string {
-				return li.Text()
+	var rawContents []string
+	targetSection.Find("h3:contains('Syntax')").NextUntil("h3").Each(func(i int, s *goquery.Selection) {
+		if s.Is("p") {
+			// Handle <code>, <strong> and <a> tags specially
+			content := ""
+			s.Contents().Each(func(i int, contentNode *goquery.Selection) {
+				switch goquery.NodeName(contentNode) {
+				case "code":
+					content += "`" + contentNode.Text() + "`"
+				case "a":
+					linkHref, _ := contentNode.Attr("href")
+					if !strings.HasPrefix(linkHref, "http") {
+						linkHref = baseUrl + linkHref
+					}
+					content += "[" + contentNode.Text() + "](" + linkHref + ")"
+				case "strong", "bold":
+					content += "**" + contentNode.Text() + "**"
+				default:
+					content += contentNode.Text()
+				}
 			})
-			for _, ulItem := range ulItems {
-				rawContent = append(rawContent, "- "+ulItem)
-			}
+			rawContents = append(rawContents, content)
+		} else if s.Is("ul") {
+			s.Find("li p").Each(func(j int, listItem *goquery.Selection) {
+				// Handle <code>, <strong> and <a> tags specially within list items
+				content := ""
+				listItem.Contents().Each(func(k int, contentNode *goquery.Selection) {
+					switch goquery.NodeName(contentNode) {
+					case "code":
+						content += "`" + contentNode.Text() + "`"
+					case "a":
+						linkHref, _ := contentNode.Attr("href")
+						if !strings.HasPrefix(linkHref, "http") {
+							linkHref = baseUrl + linkHref
+						}
+						content += "[" + contentNode.Text() + "](" + linkHref + ")"
+					case "strong", "bold":
+						content += "**" + contentNode.Text() + "**"
+					default:
+						content += contentNode.Text()
+					}
+				})
+				rawContents = append(rawContents, content)
+			})
 		}
 	})
 
-	// Trim spaces
-	function.Syntax.Raw = strings.Join(rawContent, "\n")
+	function.Syntax.Raw = strings.Join(rawContents, "\n")
 
 	// Extract and format "See Also" links
 	seeAlsoLinks := targetSection.Find("h3:contains('See Also') ~ p a").Map(func(i int, s *goquery.Selection) string {
