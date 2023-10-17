@@ -97,10 +97,10 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	targetSection := doc.Find("#hcfe-content > section > div > div.main-content > article > section")
 
 	// Extract the function name from the h1 tag
-	function.Name = targetSection.Find("h1").Text()
+	//function.Name = targetSection.Find("h1").Text()
 
 	// Extract and format sample usage as a single string with newline \n
-	sampleUsage := targetSection.Find("h3:contains('Sample Usage') + p code").Map(func(i int, s *goquery.Selection) string {
+	sampleUsage := targetSection.Find("h3:contains('Sample') + p code").Map(func(i int, s *goquery.Selection) string {
 		return s.Text()
 	})
 	function.Example = strings.Join(sampleUsage, "\n")
@@ -110,44 +110,37 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	function.Syntax.Layout = syntaxLayout
 
 	// Extract and format the raw content for Discord
-	rawContent := targetSection.Find("h3:contains('Syntax') + ul li").Map(func(i int, s *goquery.Selection) string {
-		// Extract the text
-		text := s.Text()
+	rawContent := []string{}
+	targetSection.Find("h3").Each(func(i int, s *goquery.Selection) {
+		// Extract the heading text
+		headingText := s.Text()
 
-		// Format code tags as `code`
-		text = strings.ReplaceAll(text, "<code>", "`")
-		text = strings.ReplaceAll(text, "</code>", "`")
+		// Format the heading
+		rawContent = append(rawContent, "### "+headingText)
 
-		// Format strong and bold tags as **text**
-		text = strings.ReplaceAll(text, "<strong>", "**")
-		text = strings.ReplaceAll(text, "</strong>", "**")
-		text = strings.ReplaceAll(text, "<b>", "**")
-		text = strings.ReplaceAll(text, "</b>", "**")
+		// Check if there's a <code> element after the heading
+		codeText := s.Next().Find("code").Text()
+		if codeText != "" {
+			rawContent = append(rawContent, "`"+codeText+"`")
+		}
 
-		// Format links as [text](link)
-		s.Find("a").Each(func(i int, link *goquery.Selection) {
-			linkText := link.Text()
-			linkHref, _ := link.Attr("href")
-			if !strings.HasPrefix(linkHref, "http") {
-				linkHref = baseUrl + linkHref
+		// Check if there's a <ul> element after the heading
+		ul := s.Next().Find("ul")
+		if ul.Length() > 0 {
+			ulItems := ul.Find("li").Map(func(i int, li *goquery.Selection) string {
+				return li.Text()
+			})
+			for _, ulItem := range ulItems {
+				rawContent = append(rawContent, "- "+ulItem)
 			}
-			linkReplacement := "[" + linkText + "](" + linkHref + ")"
-			text = strings.ReplaceAll(text, link.Text(), linkReplacement)
-		})
-
-		return text
+		}
 	})
 
+	// Trim spaces
 	function.Syntax.Raw = strings.Join(rawContent, "\n")
 
-	// Extract notes and format them
-	notes := targetSection.Find("h3:contains('Notes') + ul li").Map(func(i int, s *goquery.Selection) string {
-		return s.Text()
-	})
-	function.Description += "\n\nNotes:\n" + strings.Join(notes, "\n")
-
 	// Extract and format "See Also" links
-	seeAlsoLinks := targetSection.Find("h3:contains('See Also') + p a").Map(func(i int, s *goquery.Selection) string {
+	seeAlsoLinks := targetSection.Find("h3:contains('See Also') ~ p a").Map(func(i int, s *goquery.Selection) string {
 		linkText := s.Text()
 		linkHref, _ := s.Attr("href")
 		if !strings.HasPrefix(linkHref, "http") {
@@ -160,11 +153,4 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	// TODO: Parse and format the argument details if needed
 	// You can iterate through elements under the syntax section and extract argument details.
 
-	// Example of checking for optional and variadic
-	if strings.Contains(function.Syntax.Raw, "[") || strings.Contains(function.Syntax.Raw, "]") {
-		function.Syntax.Args[0].Optional = true
-	}
-	if strings.Contains(function.Syntax.Raw, "...") {
-		function.Syntax.Args[1].Variadic = true
-	}
 }
