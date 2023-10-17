@@ -18,7 +18,8 @@ func UrlToScrape(url string) FunctionScraper {
 		return &excelUrl
 	}
 	if strings.Contains(url, "google") {
-		return &SheetsScraper{}
+		sheetsUrl := SheetsUrl(url)
+		return &sheetsUrl
 	}
 	return nil
 }
