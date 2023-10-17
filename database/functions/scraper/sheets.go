@@ -3,27 +3,28 @@ package main
 import "go-clippy/database/functions"
 
 //type Function struct {
-//	Name        string   `json:"name,omitempty"`
+//	Name        string   `json:"name"`
 //	Category    string   `json:"category,omitempty"`
-//	Syntax      Syntax   `json:"args,omitempty"`
+//	Syntax      Syntax   `json:"syntax"`
 //	Example     string   `json:"example,omitempty"`
 //	Description string   `json:"description,omitempty"`
 //	URL         string   `json:"url,omitempty"`
-//	SeeAlso     string   `json:"seealso,omitempty"`
+//	SeeAlso     string   `json:"see_also,omitempty"`
 //	Version     []string `json:"version,omitempty"`
 //}
 //
 //type Syntax struct {
-//	Layout string `json:"layout,omitempty"`
-//	Raw    string `json:"raw,omitempty"`
+//	Layout string `json:"layout"`
+//	Raw    string `json:"raw"`
 //	Args   []Args `json:"args,omitempty"`
 //}
 //
 //type Args struct {
-//	Description string `json:"description,omitempty"`
-//	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
-//	Variadic    bool   `json:"variadic,omitempty"`
-//	Optional    bool   `json:"optional,omitempty"`
+//	Name        string `json:"name"`
+//	Description string `json:"description"`
+//	Type        string `json:"type"` // string, int, boolean, range, array, function (lambda)
+//	Variadic    bool   `json:"variadic"`
+//	Optional    bool   `json:"optional"`
 //}
 
 type SheetsScraper struct{}

@@ -15,7 +15,7 @@ type Function struct {
 	Example     string   `json:"example,omitempty"`
 	Description string   `json:"description,omitempty"`
 	URL         string   `json:"url,omitempty"`
-	SeeAlso     string   `json:"seealso,omitempty"`
+	SeeAlso     string   `json:"see_also,omitempty"`
 	Version     []string `json:"version,omitempty"`
 }
 
