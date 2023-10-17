@@ -8,9 +8,9 @@ import (
 )
 
 //type Function struct {
-//	Name        string   `json:"name,omitempty"`
+//	Name        string   `json:"name"`
 //	Category    string   `json:"category,omitempty"`
-//	Syntax      Syntax   `json:"args,omitempty"`
+//	Syntax      Syntax   `json:"syntax"`
 //	Example     string   `json:"example,omitempty"`
 //	Description string   `json:"description,omitempty"`
 //	URL         string   `json:"url,omitempty"`
@@ -19,16 +19,17 @@ import (
 //}
 //
 //type Syntax struct {
-//	Layout string `json:"layout,omitempty"`
-//	Raw    string `json:"raw,omitempty"`
+//	Layout string `json:"layout"`
+//	Raw    string `json:"raw"`
 //	Args   []Args `json:"args,omitempty"`
 //}
 //
 //type Args struct {
-//	Description string `json:"description,omitempty"`
-//	Type        string `json:"type,omitempty"` // string, int, boolean, range, array, function (lambda)
-//	Variadic    bool   `json:"variadic,omitempty"`
-//	Optional    bool   `json:"optional,omitempty"`
+//	Name        string `json:"name"`
+//	Description string `json:"description"`
+//	Type        string `json:"type"` // string, int, boolean, range, array, function (lambda)
+//	Variadic    bool   `json:"variadic"`
+//	Optional    bool   `json:"optional"`
 //}
 
 type ExcelUrl string
@@ -172,7 +173,10 @@ func (url *ExcelUrl) parseSyntaxSection(s *goquery.Selection, function *function
 		argName := strings.ToLower(words[0])
 		argName = strings.ReplaceAll(argName, "`", "")
 
-		description := strings.Join(words[2:], " ")         // The rest of the words are the description
+		if len(words) > 2 {
+			words = words[2:]
+		}
+		description := strings.Join(words, " ")             // The rest of the words are the description
 		description = strings.TrimPrefix(description, ". ") // Remove the ". " from the description if it exists
 
 		// Check if the argument is optional
