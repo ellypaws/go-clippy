@@ -58,7 +58,7 @@ func (url *SheetsUrl) Scrape() []functions.Function {
 		if !strings.HasPrefix(url, "http") {
 			url = "https://support.google.com" + url
 		}
-		description = strings.ReplaceAll(description, "[Learn more]", "[Learn more]("+url+")")
+		description = strings.ReplaceAll(description, "Learn more", "[Learn more]("+url+")")
 
 		// Create a custom function struct and add it to the list
 		function := functions.Function{
