@@ -56,8 +56,9 @@ func (url *SheetsUrl) Scrape() []functions.Function {
 		// Extract the full Google URL and format as [Learn more](url)
 		url := descriptionElement.Find("a").AttrOr("href", "")
 		if !strings.HasPrefix(url, "http") {
-			url = "https://support.google.com/" + url
+			url = "https://support.google.com" + url
 		}
+		description = strings.ReplaceAll(description, "[Learn more]", "[Learn more]("+url+")")
 
 		// Create a custom function struct and add it to the list
 		function := functions.Function{
@@ -66,7 +67,7 @@ func (url *SheetsUrl) Scrape() []functions.Function {
 			Syntax: functions.Syntax{
 				Layout: syntaxLayout,
 			},
-			Description: description + "[Learn more](" + url + ")",
+			Description: description,
 			URL:         url,
 		}
 		f = append(f, function)
@@ -89,6 +90,8 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	if err != nil {
 		return
 	}
+
+	baseUrl := "https://support.google.com"
 
 	// Find the target section with the provided selector
 	targetSection := doc.Find("#hcfe-content > section > div > div.main-content > article > section")
@@ -125,6 +128,9 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 		s.Find("a").Each(func(i int, link *goquery.Selection) {
 			linkText := link.Text()
 			linkHref, _ := link.Attr("href")
+			if !strings.HasPrefix(linkHref, "http") {
+				linkHref = baseUrl + linkHref
+			}
 			linkReplacement := "[" + linkText + "](" + linkHref + ")"
 			text = strings.ReplaceAll(text, link.Text(), linkReplacement)
 		})
@@ -144,6 +150,9 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	seeAlsoLinks := targetSection.Find("h3:contains('See Also') + p a").Map(func(i int, s *goquery.Selection) string {
 		linkText := s.Text()
 		linkHref, _ := s.Attr("href")
+		if !strings.HasPrefix(linkHref, "http") {
+			linkHref = baseUrl + linkHref
+		}
 		return "[" + linkText + "](" + linkHref + ")"
 	})
 	function.SeeAlso = strings.Join(seeAlsoLinks, "\n")
