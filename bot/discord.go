@@ -2,9 +2,12 @@ package discord
 
 import (
 	"flag"
+	"fmt"
 	"github.com/bwmarrin/discordgo"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joho/godotenv"
 	_ "go-clippy/database"
+	logger "go-clippy/gui/log"
 	"log"
 	"os"
 	"os/signal"
@@ -19,6 +22,7 @@ type BOT struct {
 	printFlags         *bool
 	registeredCommands map[string]*discordgo.ApplicationCommand
 	session            *discordgo.Session
+	p                  *tea.Program
 }
 
 var bot *BOT
@@ -68,7 +72,8 @@ func init() {
 	log.Println("Bot initialized:", bot)
 }
 
-func (BOT) Run() {
+func (BOT) Run(p *tea.Program) {
+	bot.p = p
 	registerHandlers(bot.session)
 	err := bot.session.Open()
 	if err != nil {
@@ -77,25 +82,25 @@ func (BOT) Run() {
 
 	// remove all commands at startup when -clcmd flag is passed
 	if *bot.cleanCommands {
-		log.Println("Removing all commands...")
+		bot.p.Send(logger.Message("Removing all commands"))
 
 		commandsToRemove, _ := bot.session.ApplicationCommands(bot.session.State.User.ID, *bot.guildID)
 		if len(commandsToRemove) == 0 {
-			log.Println("No commands to remove")
+			bot.p.Send(logger.Message("No commands to remove"))
 		}
 		for _, command := range commandsToRemove {
 			log.Printf("Attempting to remove '%v' command...", command.Name)
 			err := bot.session.ApplicationCommandDelete(bot.session.State.User.ID, *bot.guildID, command.ID)
 			if err != nil {
-				log.Println("Cannot delete '%v' command: %v", command.Name, err)
+				bot.p.Send(logger.Message(fmt.Sprintf("Cannot delete '%v' command: %v", command.Name, err)))
 				continue
 			}
-			log.Print("... success! ", command.ID)
+			bot.p.Send(logger.Message(fmt.Sprintf("... success! %v", command.ID)))
 		}
 	}
 
-	log.Println("Adding commands...")
-	registerCommands(bot.session)
+	bot.p.Send(logger.Message("Registering commands"))
+	registerCommands(bot)
 
 	defer func(session *discordgo.Session) {
 		err := session.Close()
@@ -159,7 +164,7 @@ func registerHandlers(session *discordgo.Session) {
 	})
 }
 
-func registerCommands(session *discordgo.Session) {
+func registerCommands(bot *BOT) {
 	bot.registeredCommands = make(map[string]*discordgo.ApplicationCommand, len(commands))
 	for key, command := range commands {
 		if command.Name == "" {
@@ -176,11 +181,12 @@ func registerCommands(session *discordgo.Session) {
 			}
 			command.Name = sanitized
 		}
-		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, *bot.guildID, command)
+		cmd, err := bot.session.ApplicationCommandCreate(bot.session.State.User.ID, *bot.guildID, command)
 		if err != nil {
 			log.Panicf("Cannot create '%v' command: %v", command.Name, err)
 		}
 		bot.registeredCommands[key] = cmd
-		log.Println("Registered command:", cmd.Name, cmd.ID)
+		//log.Println("Registered command:", cmd.Name, cmd.ID)
+		bot.p.Send(logger.Message(fmt.Sprintf("Registered command: %v", cmd.Name)))
 	}
 }
