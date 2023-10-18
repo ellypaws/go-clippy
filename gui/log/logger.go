@@ -37,9 +37,11 @@ func (r ResultMsg) String() string {
 	if r.message == "" {
 		return dotStyle.Render(strings.Repeat(".", 30))
 	}
-	return fmt.Sprintf("🍔 Ate %s %s", r.message,
+	return fmt.Sprintf("🍔 [%s] Ate %s",
 		// show as hour i.e. 15:23
-		durationStyle.Render(r.time.Format("15:04")))
+		durationStyle.Render(r.time.Format("15:04")),
+		r.message,
+	)
 }
 
 type Model struct {
@@ -49,7 +51,7 @@ type Model struct {
 }
 
 func NewSender() *Model {
-	const numLastResults = 10
+	const numLastResults = 15
 	s := spinner.New()
 	s.Style = spinnerStyle
 	return &Model{
