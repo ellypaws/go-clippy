@@ -160,13 +160,20 @@ func (url *SheetsUrl) UpdateSingleUrl(function *functions.Function) {
 	function.Syntax.Raw = strings.Join(rawContents, "\n")
 
 	// Extract and format "See Also" links
-	seeAlsoLinks := targetSection.Find("h3:contains('See Also') ~ p a").Map(func(i int, s *goquery.Selection) string {
-		linkText := s.Text()
-		linkHref, _ := s.Attr("href")
-		if !strings.HasPrefix(linkHref, "http") {
-			linkHref = baseUrl + linkHref
-		}
-		return "[" + linkText + "](" + linkHref + ")"
+	seeAlsoLinks := targetSection.Find("h3:contains('See Also') ~ p").Map(func(i int, s *goquery.Selection) string {
+		var description, linkText, linkHref string
+		s.Contents().Each(func(_ int, content *goquery.Selection) {
+			if content.Is("a") {
+				linkText = content.Text()
+				linkHref, _ = content.Attr("href")
+				if !strings.HasPrefix(linkHref, "http") {
+					linkHref = baseUrl + linkHref
+				}
+			} else {
+				description += content.Text() + " "
+			}
+		})
+		return "[" + linkText + "](" + linkHref + "): " + strings.TrimSpace(description)
 	})
 	function.SeeAlso = strings.Join(seeAlsoLinks, "\n")
 
