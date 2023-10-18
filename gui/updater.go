@@ -15,6 +15,7 @@ import (
 )
 
 var sliceFuncs []functions.Function
+var total int
 
 // var excelUrl = UrlToScrape("https://support.microsoft.com/en-us/office/excel-functions-alphabetical-b3944572-255d-4efb-bb96-c6d90033e188")
 var sheetsUrl = scraper.UrlToScrape("https://support.google.com/docs/table/25273?hl=en")
@@ -29,10 +30,11 @@ func newMain() MainModel {
 	var senders []tea.Model
 	if sliceFuncs == nil {
 		sliceFuncs = sheetsUrl.Scrape()
+		total = len(sliceFuncs)
 	}
 
 	var numJobs = len(sliceFuncs)
-	const numWorkers = 3
+	const numWorkers = 5
 	jobs := make(chan functions.Function, numJobs)
 	results := make(chan functions.Function, numJobs)
 
@@ -101,7 +103,7 @@ func finish(m MainModel) {
 	// wait for all results
 	log.Printf("Waiting for %d results\n", len(sliceFuncs))
 	sliceFuncs = make([]functions.Function, 0)
-	for a := 1; a <= len(m.results); a++ {
+	for a := 1; a <= total; a++ {
 		log.Println(a)
 		r := <-m.results
 		log.Printf("Got result %v\n", r)
