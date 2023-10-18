@@ -109,7 +109,7 @@ func recordAward(i *discordgo.InteractionCreate) {
 			GuildID:         guild.ID,
 			Channel:         channel.Name,
 			ChannelID:       channel.ID,
-			MessageID:       i.Message.ID,
+			MessageID:       i.Interaction.Message.ID,
 			OriginUsername:  i.Member.User.Username,
 			OriginSnowflake: i.Member.User.ID,
 			InteractionID:   i.ID,
