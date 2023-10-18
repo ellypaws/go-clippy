@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"go-clippy/database/clippy"
+	logger "go-clippy/gui/log"
 	"log"
 	"slices"
 	"strconv"
@@ -256,8 +257,10 @@ func errorEmbed(errorContent []any, i *discordgo.Interaction) ([]*discordgo.Mess
 
 func sanitizeToken(errorString *string) *string {
 	if strings.Contains(*errorString, *bot.token) {
-		log.Println("WARNING: Bot token was found in the error message. Replacing it with \"Bot Token\"")
-		log.Println("Error message:", errorString)
+		//log.Println("WARNING: Bot token was found in the error message. Replacing it with \"Bot Token\"")
+		//log.Println("Error message:", errorString)
+		GetBot().p.Send(logger.Message(fmt.Sprintf("WARNING: Bot token was found in the error message. Replacing it with \"Bot Token\"")))
+		GetBot().p.Send(logger.Message(fmt.Sprintf("Error message: %v", errorString)))
 		sanitizedString := strings.ReplaceAll(*errorString, *bot.token, "[TOKEN]")
 		errorString = &sanitizedString
 	}
@@ -265,12 +268,14 @@ func sanitizeToken(errorString *string) *string {
 }
 
 func logError(errorString string, i *discordgo.Interaction) {
-	log.Printf("WARNING: A command failed to execute: %v", errorString)
+	GetBot().p.Send(logger.Message(fmt.Sprintf("WARNING: A command failed to execute: %v", errorString)))
 	if i.Type == discordgo.InteractionMessageComponent {
-		log.Printf("Command: %v", i.MessageComponentData().CustomID)
+		//log.Printf("Command: %v", i.MessageComponentData().CustomID)
+		GetBot().p.Send(logger.Message(fmt.Sprintf("Command: %v", i.MessageComponentData().CustomID)))
 	}
 	log.Printf("User: %v", i.Member.User.Username)
 	if i.Type == discordgo.InteractionMessageComponent {
-		log.Printf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
+		//log.Printf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
+		GetBot().p.Send(logger.Message(fmt.Sprintf("Link: https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)))
 	}
 }

@@ -125,7 +125,7 @@ func (BOT) Run(p *tea.Program) {
 		// }
 
 		for _, command := range bot.registeredCommands {
-			log.Println("Removing commands:", command.Name)
+			bot.p.Send(logger.Message(fmt.Sprintf("Removing command: %v", command.Name)))
 			err := bot.session.ApplicationCommandDelete(bot.session.State.User.ID, *bot.guildID, command.ID)
 			if err != nil {
 				log.Panicf("Cannot delete '%v' command: %v", command.Name, err)
@@ -137,30 +137,30 @@ func (BOT) Run(p *tea.Program) {
 }
 
 func registerHandlers(session *discordgo.Session) {
-	session.AddHandler(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+	session.AddHandler(func(session *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		// commands
 		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
 			if h, ok := commandHandlers[i.ApplicationCommandData().Name]; ok {
-				h(bot, i)
+				h(session, i)
 			}
 		//buttons
 		case discordgo.InteractionMessageComponent:
 			log.Printf("Component with customID `%v` was pressed, attempting to respond\n", i.MessageComponentData().CustomID)
 			if h, ok := componentHandlers[i.MessageComponentData().CustomID]; ok {
-				log.Printf(
+				bot.p.Send(logger.Message(fmt.Sprintf(
 					"Handler found, executing on message `%v`\nRan by: <@%v>\nUsername: %v",
 					i.Message.ID,
 					i.Member.User.ID,
 					i.Member.User.Username,
-				)
-				log.Printf("https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)
-				h(bot, i)
+				)))
+				bot.p.Send(logger.Message(fmt.Sprintf("https://discord.com/channels/%v/%v/%v", i.GuildID, i.ChannelID, i.Message.ID)))
+				h(session, i)
 			}
 		}
 	})
-	session.AddHandler(func(bot *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", bot.State.User.Username, bot.State.User.Discriminator)
+	session.AddHandler(func(session *discordgo.Session, r *discordgo.Ready) {
+		bot.p.Send(logger.Message(fmt.Sprintf("Logged in as: %v#%v", session.State.User.Username, session.State.User.Discriminator)))
 	})
 }
 

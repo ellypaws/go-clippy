@@ -8,7 +8,7 @@ import (
 	"github.com/sahilm/fuzzy"
 	"go-clippy/database/clippy"
 	"go-clippy/database/functions"
-	"log"
+	logger "go-clippy/gui/log"
 	"regexp"
 	"slices"
 	"strings"
@@ -227,7 +227,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("Encountered an error while fetching channel: %v", err))
 			err := bot.InteractionResponseDelete(i.Interaction)
 			if err != nil {
-				log.Printf("Encountered an error while deleting interaction response: %v", err)
+				//log.Printf("Encountered an error while deleting interaction response: %v", err)
+				GetBot().p.Send(logger.Message(fmt.Sprintf("Encountered an error while deleting interaction response: %v", err)))
 			}
 			return
 		}
@@ -245,7 +246,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			errorEphemeralFollowup(bot, i.Interaction, fmt.Sprintf("<#%v> is not a valid thread", channel))
 			err := bot.InteractionResponseDelete(i.Interaction)
 			if err != nil {
-				log.Printf("Encountered an error while deleting interaction response: %v", err)
+				//log.Printf("Encountered an error while deleting interaction response: %v", err)
+				GetBot().p.Send(logger.Message(fmt.Sprintf("Encountered an error while deleting interaction response: %v", err)))
 			}
 			return
 		}
@@ -364,7 +366,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		case discordgo.InteractionApplicationCommandAutocomplete:
 			var choices []*discordgo.ApplicationCommandOptionChoice
 			if input != "" {
-				log.Printf("Querying for [%v] %v", platform, input)
+				//log.Printf("Querying for [%v] %v", platform, input)
+				GetBot().p.Send(logger.Message(fmt.Sprintf("Querying for [%v] %v", platform, input)))
 
 				cache := functions.Cached(platform)
 				results := fuzzy.FindFrom(input, cache)
