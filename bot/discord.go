@@ -11,77 +11,81 @@ import (
 	"strings"
 )
 
-var (
-	guildID        = flag.String("guild", "", "Guild ID. If not passed - bot registers commands globally")
-	botToken       = flag.String("token", "", "Bot access token")
-	removeCommands = flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not")
-	cleanCommands  = flag.Bool("clcmd", false, "Remove all commands before starting")
-	printFlags     = flag.Bool("printflags", false, "Print all flags")
-)
-
-var (
-	bot                *discordgo.Session
+type BOT struct {
+	guildID            *string
+	token              *string
+	removeCommands     *bool
+	cleanCommands      *bool
+	printFlags         *bool
 	registeredCommands map[string]*discordgo.ApplicationCommand
-)
+	session            *discordgo.Session
+}
 
-func init() { flag.Parse() }
+var bot *BOT
 
-func init() {
-	_ = godotenv.Load()
-	if botToken == nil || *botToken == "" {
+func GetBot() *BOT {
+	if bot != nil {
+		return bot
+	}
+	token := flag.String("token", "", "Bot access token")
+	if token == nil || *token == "" {
 		tokenEnv := os.Getenv("BOT_TOKEN")
 		if tokenEnv != "" {
 			if tokenEnv == "YOUR_BOT_TOKEN_HERE" {
 				log.Fatalf("Invalid bot token: %v\n"+
 					"Did you edit the .env or run the program with -token ?", tokenEnv)
 			}
-			botToken = &tokenEnv
+			token = &tokenEnv
 		}
 	}
-
-	if *printFlags {
-		log.Printf("Guild ID: %v", *guildID)
-		log.Printf("Bot Token: %v", *botToken)
-		log.Printf("Remove Commands: %v", *removeCommands)
-		log.Printf("Clean Commands: %v", *cleanCommands)
+	session, err := discordgo.New("Bot " + *token)
+	if err != nil {
+		log.Fatalf("Invalid bot parameters: %v", err)
+	}
+	return &BOT{
+		guildID:            flag.String("guild", "", "Guild ID. If not passed - bot registers commands globally"),
+		token:              token,
+		removeCommands:     flag.Bool("rmcmd", false, "Remove all commands after shutdowning or not"),
+		cleanCommands:      flag.Bool("clcmd", false, "Remove all commands before starting"),
+		printFlags:         flag.Bool("printflags", false, "Print all flags"),
+		registeredCommands: make(map[string]*discordgo.ApplicationCommand),
+		session:            session,
 	}
 }
 
+func init() { flag.Parse() }
+
 func init() {
-	var err error
-	log.Println("Initializing bot...")
-	bot, err = GetBot()
-	if err != nil {
-		log.Fatalf("Invalid bot parameters: %v", err)
+	_ = godotenv.Load()
+	bot = GetBot()
+
+	if *bot.printFlags {
+		log.Printf("Guild ID: %v", *bot.guildID)
+		log.Printf("Bot Token: %v", *bot.token)
+		log.Printf("Remove Commands: %v", *bot.removeCommands)
+		log.Printf("Clean Commands: %v", *bot.cleanCommands)
 	}
 	log.Println("Bot initialized:", bot)
 }
 
-func GetBot() (*discordgo.Session, error) {
-	if bot != nil {
-		return bot, nil
-	}
-	return discordgo.New("Bot " + *botToken)
-}
-
-func Run() {
-	registerHandlers(bot)
-	err := bot.Open()
+func (BOT) Run() {
+	registerHandlers(bot.session)
+	err := bot.session.Open()
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
 
 	// remove all commands at startup when -clcmd flag is passed
-	if *cleanCommands {
+	if *bot.cleanCommands {
 		log.Println("Removing all commands...")
 
-		commandsToRemove, _ := bot.ApplicationCommands(bot.State.User.ID, *guildID)
+		commandsToRemove, _ := bot.session.ApplicationCommands(bot.session.State.User.ID, *bot.guildID)
 		if len(commandsToRemove) == 0 {
 			log.Println("No commands to remove")
 		}
 		for _, command := range commandsToRemove {
 			log.Printf("Attempting to remove '%v' command...", command.Name)
-			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, command.ID)
+			err := bot.session.ApplicationCommandDelete(bot.session.State.User.ID, *bot.guildID, command.ID)
 			if err != nil {
 				log.Println("Cannot delete '%v' command: %v", command.Name, err)
 				continue
@@ -91,21 +95,21 @@ func Run() {
 	}
 
 	log.Println("Adding commands...")
-	registerCommands(bot)
+	registerCommands(bot.session)
 
-	defer func(bot *discordgo.Session) {
-		err := bot.Close()
+	defer func(session *discordgo.Session) {
+		err := session.Close()
 		if err != nil {
 			log.Fatalf("Cannot close the session: %v", err)
 		}
-	}(bot)
+	}(bot.session)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	log.Println("Press Ctrl+C to exit")
 	<-stop
 
-	if *removeCommands {
+	if *bot.removeCommands {
 		// // We need to fetch the commands, since deleting requires the command ID.
 		// // We are doing this from the returned commands on line 375, because using
 		// // this will delete all the commands, which might not be desirable, so we
@@ -115,9 +119,9 @@ func Run() {
 		// 	log.Fatalf("Could not fetch registered commands: %v", err)
 		// }
 
-		for _, command := range registeredCommands {
+		for _, command := range bot.registeredCommands {
 			log.Println("Removing commands:", command.Name)
-			err := bot.ApplicationCommandDelete(bot.State.User.ID, *guildID, command.ID)
+			err := bot.session.ApplicationCommandDelete(bot.session.State.User.ID, *bot.guildID, command.ID)
 			if err != nil {
 				log.Panicf("Cannot delete '%v' command: %v", command.Name, err)
 			}
@@ -127,8 +131,8 @@ func Run() {
 	log.Println("Gracefully shutting down.")
 }
 
-func registerHandlers(bot *discordgo.Session) {
-	bot.AddHandler(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
+func registerHandlers(session *discordgo.Session) {
+	session.AddHandler(func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		switch i.Type {
 		// commands
 		case discordgo.InteractionApplicationCommand, discordgo.InteractionApplicationCommandAutocomplete:
@@ -150,13 +154,13 @@ func registerHandlers(bot *discordgo.Session) {
 			}
 		}
 	})
-	bot.AddHandler(func(bot *discordgo.Session, r *discordgo.Ready) {
+	session.AddHandler(func(bot *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", bot.State.User.Username, bot.State.User.Discriminator)
 	})
 }
 
-func registerCommands(bot *discordgo.Session) {
-	registeredCommands = make(map[string]*discordgo.ApplicationCommand, len(commands))
+func registerCommands(session *discordgo.Session) {
+	bot.registeredCommands = make(map[string]*discordgo.ApplicationCommand, len(commands))
 	for key, command := range commands {
 		if command.Name == "" {
 			// clean the key because it might be a description of some sort
@@ -172,11 +176,11 @@ func registerCommands(bot *discordgo.Session) {
 			}
 			command.Name = sanitized
 		}
-		cmd, err := bot.ApplicationCommandCreate(bot.State.User.ID, *guildID, command)
+		cmd, err := session.ApplicationCommandCreate(session.State.User.ID, *bot.guildID, command)
 		if err != nil {
 			log.Panicf("Cannot create '%v' command: %v", command.Name, err)
 		}
-		registeredCommands[key] = cmd
+		bot.registeredCommands[key] = cmd
 		log.Println("Registered command:", cmd.Name, cmd.ID)
 	}
 }

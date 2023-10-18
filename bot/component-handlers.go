@@ -74,15 +74,15 @@ func recordAward(i *discordgo.InteractionCreate) {
 		}
 
 		if option, ok := optionMap[maskedUser]; ok {
-			val := option.UserValue(bot)
+			val := option.UserValue(bot.session)
 			snowflakes = append(snowflakes, val.ID)
 		}
 	}
 
 	for _, snowflake := range snowflakes {
-		awarded, err := bot.User(snowflake)
+		awarded, err := bot.session.User(snowflake)
 		if err != nil {
-			errorEdit(bot, i.Interaction, err)
+			errorEdit(bot.session, i.Interaction, err)
 			return
 		}
 
@@ -90,15 +90,15 @@ func recordAward(i *discordgo.InteractionCreate) {
 			newConfig(awarded).Record()
 		}
 
-		guild, err := bot.Guild(i.GuildID)
+		guild, err := bot.session.Guild(i.GuildID)
 		if err != nil {
-			errorEdit(bot, i.Interaction, err)
+			errorEdit(bot.session, i.Interaction, err)
 			return
 		}
 
-		channel, err := bot.Channel(i.ChannelID)
+		channel, err := bot.session.Channel(i.ChannelID)
 		if err != nil {
-			errorEdit(bot, i.Interaction, err)
+			errorEdit(bot.session, i.Interaction, err)
 			return
 		}
 
@@ -255,10 +255,10 @@ func errorEmbed(errorContent []any, i *discordgo.Interaction) ([]*discordgo.Mess
 }
 
 func sanitizeToken(errorString *string) *string {
-	if strings.Contains(*errorString, *botToken) {
+	if strings.Contains(*errorString, *bot.token) {
 		log.Println("WARNING: Bot token was found in the error message. Replacing it with \"Bot Token\"")
 		log.Println("Error message:", errorString)
-		sanitizedString := strings.ReplaceAll(*errorString, *botToken, "[TOKEN]")
+		sanitizedString := strings.ReplaceAll(*errorString, *bot.token, "[TOKEN]")
 		errorString = &sanitizedString
 	}
 	return errorString
