@@ -74,8 +74,13 @@ func (m MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return spinner.TickMsg{}
 		})
 	case tea.KeyMsg:
-		if msg.Type == tea.KeyCtrlF {
-			finish(m.results)
+		switch msg.String() {
+		case "f":
+			m.Update(tea.Println("Waiting for all results to finish..."))
+			finish(m)
+			tea.Println("Finished!")
+		case "r":
+			record()
 		}
 		return m, nil
 	default:
@@ -92,16 +97,15 @@ func (m MainModel) View() string {
 	return lipgloss.JoinHorizontal(lipgloss.Center, views...)
 }
 
-func finish(results chan functions.Function) {
+func finish(m MainModel) {
 	// wait for all results
-	for a := 1; a <= len(sliceFuncs); a++ {
-		<-results
-	}
-
+	log.Printf("Waiting for %d results\n", len(sliceFuncs))
 	sliceFuncs = make([]functions.Function, 0)
-
-	for function := range results {
-		sliceFuncs = append(sliceFuncs, function)
+	for a := 1; a <= len(m.results); a++ {
+		log.Println(a)
+		r := <-m.results
+		log.Printf("Got result %v\n", r)
+		sliceFuncs = append(sliceFuncs, r)
 	}
 
 	// save to json
@@ -109,6 +113,13 @@ func finish(results chan functions.Function) {
 	toPrint := strings.ReplaceAll(string(indent), "\\n", lipgloss.NewStyle().Foreground(lipgloss.Color("#e07a00")).Render("↵\n"))
 	log.Printf("%+v\n", toPrint)
 	os.WriteFile("sheets.json", indent, 0644)
+	log.Printf("Finished! %d results\n", len(sliceFuncs))
+}
+
+func record() {
+	for _, f := range sliceFuncs {
+		f.Record(functions.GetCollection("sheets"))
+	}
 }
 
 var p *tea.Program
