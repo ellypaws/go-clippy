@@ -323,6 +323,7 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		}
 		switch i.Type {
 		case discordgo.InteractionApplicationCommand:
+			responses[thinkResponse].(newResponseType)(bot, i)
 			f, err := functions.GetCollection(platform).FindByKey(strings.ToUpper(input))
 			if err != nil {
 				responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
