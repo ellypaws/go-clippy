@@ -2,7 +2,6 @@ package discord
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/sahilm/fuzzy"
@@ -335,15 +334,32 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 					components[deleteButton])
 				return
 			}
-			b, _ := json.MarshalIndent(f, "", "  ")
+			out := strings.Builder{}
+			if f.Syntax.Layout != "" {
+				out.WriteString(fmt.Sprintf("## %v\n", f.Syntax.Layout))
+			} else {
+				out.WriteString(fmt.Sprintf("## %v\n", f.Name))
+			}
+			if f.Description != "" {
+				out.WriteString(fmt.Sprintf("### Description\n%v\n", f.Description))
+			}
+			if f.Syntax.Raw != "" {
+				out.WriteString(fmt.Sprintf("### Syntax\n%v\n", f.Syntax.Raw))
+			} else {
+				out.WriteString(fmt.Sprintf("### Syntax\n%v\n", f.Syntax.Layout))
+			}
+			if f.SeeAlso != "" {
+				out.WriteString(fmt.Sprintf("### See Also\n%v\n", f.SeeAlso))
+			}
+			message := out.String()
 			// ensure we're under 2000 char limit
-			if len(b) > 2000 {
-				b = b[:2000]
+			if len(message) > 2000 {
+				message = message[:2000]
 			}
 			if f.URL == "" {
 				f.URL = defaultURL
 			}
-			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, string(b),
+			responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, message,
 				discordgo.ActionsRow{[]discordgo.MessageComponent{
 					discordgo.Button{
 						Label: "Read more",
