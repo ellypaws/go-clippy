@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/joho/godotenv"
 	_ "go-clippy/database"
+	"go-clippy/database/clippy"
 	logger "go-clippy/gui/log"
 	"log"
 	"os"
@@ -102,6 +103,9 @@ func (BOT) Run(p *tea.Program) {
 	bot.p.Send(logger.Message("Registering commands"))
 	registerCommands(bot)
 
+	// pass the program to a clippy query
+	clippy.StoreProgram(p)
+
 	defer func(session *discordgo.Session) {
 		err := session.Close()
 		if err != nil {
@@ -111,7 +115,8 @@ func (BOT) Run(p *tea.Program) {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	log.Println("Press Ctrl+C to exit")
+	//log.Println("Press Ctrl+C to exit")
+	bot.p.Send(logger.Message("Press Ctrl+C to exit"))
 	<-stop
 
 	if *bot.removeCommands {

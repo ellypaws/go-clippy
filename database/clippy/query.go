@@ -2,7 +2,10 @@ package clippy
 
 import (
 	"cmp"
+	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nokusukun/bingo"
+	logger "go-clippy/gui/log"
 	"log"
 	"slices"
 )
@@ -21,7 +24,8 @@ type Request struct {
 func (point Award) Record() {
 	_, err := Awards.Insert(point, bingo.Upsert)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
+		program.Send(logger.Message(fmt.Sprintf("Error recording award: %v", err)))
 	}
 	user, ok := GetCache().GetConfig(point.Snowflake)
 	if !ok {
@@ -42,7 +46,8 @@ func (config User) Record() {
 	//}
 	_, err := Users.Insert(config, bingo.Upsert)
 	if err != nil {
-		log.Println("Error recording user: ", err)
+		//log.Println("Error recording user: ", err)
+		program.Send(logger.Message(fmt.Sprintf("Error recording user: %v", err)))
 	}
 	GetCache().updateCachedConfig(config)
 }
@@ -72,19 +77,23 @@ func (c Cache) addPointRecord(user *User) {
 		u = c.Map[user.Snowflake]
 		c.Mutex.RUnlock()
 	}
-	log.Println("current points: ", user.Points)
+	//log.Println("current points: ", user.Points)
+	program.Send(logger.Message(fmt.Sprintf("current points: %v", user.Points)))
 	user.Points++
-	log.Println("new points: ", user.Points)
+	//log.Println("new points: ", user.Points)
+	program.Send(logger.Message(fmt.Sprintf("new points: %v", user.Points)))
 
 	c.synchronizePoints(user.Snowflake)
 	if user.Points != u.Config.Points {
-		log.Printf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)
+		//log.Printf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)
+		program.Send(logger.Message(fmt.Sprintf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)))
 	}
 
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
 	c.Mutex.Unlock()
-	log.Println("recording user: ", user)
+	//log.Println("recording user: ", user)
+	program.Send(logger.Message(fmt.Sprintf("recording user: %v", user)))
 	user.Record()
 }
 
@@ -211,4 +220,10 @@ func sortUserPoints(users []userPoints) []userPoints {
 		return cmp.Compare(b.Points, a.Points)
 	})
 	return users
+}
+
+var program *tea.Program
+
+func StoreProgram(p *tea.Program) {
+	program = p
 }
