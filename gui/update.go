@@ -18,6 +18,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg, logger.ResultMsg:
 		m.logger, cmd = m.logger.Update(msg)
 		return m, cmd
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q", "esc":
+			return m, tea.Quit
+		}
 	}
 	return m, nil
 }
