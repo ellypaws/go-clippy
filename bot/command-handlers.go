@@ -193,10 +193,30 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			// TODO: Edit or delete message after awarding
 			recordAward(i)
 		}
+		var points = make(map[string]int)
+		for _, snowflake := range snowflakes {
+			points[snowflake] = clippy.GetCache().QueryPoints(clippy.Request{
+				Snowflake: snowflake,
+			})
+		}
+
+		var awardedUsers string
+		for _, snowflake := range snowflakes {
+			var pointsString string
+			if points[snowflake] != 0 {
+				pointsString = fmt.Sprintf(" (%d points)", points[snowflake])
+			} else {
+				pointsString = " (-)"
+			}
+			awardedUsers += fmt.Sprintf("<@%v>%v, ", snowflake, pointsString)
+		}
+
+		awardedUsers = awardedUsers[:len(awardedUsers)-2] // Remove the trailing comma and space
+
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
-			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel,
-				"<@"+strings.Join(snowflakes, ">, <@")+">"),
+			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel, awardedUsers),
 		)
+
 	},
 
 	// awardMessage is similar to solvedCommand, but we don't need to mark the thread as solved
