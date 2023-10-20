@@ -191,11 +191,9 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			responses[ephemeralFollowup].(msgReturnType)(bot, i.Interaction,
 				fmt.Sprintf("Awarding %v and closing channel <#%v>", "<@"+strings.Join(snowflakes, ">, <@")+">", channel))
 			// TODO: Edit or delete message after awarding
-			recordAward(i)
 		}
+		recordAward(i, snowflakes)
 		var points = make(map[string]int)
-		// TODO: Check why we need to wait for cache to catch up
-		time.Sleep(5 * time.Second)
 		for _, snowflake := range snowflakes {
 			points[snowflake] = clippy.GetCache().QueryPoints(clippy.Request{
 				Snowflake: snowflake,

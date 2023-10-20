@@ -33,14 +33,14 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 			})
 			return
 		}
-		channels[i.Message.ID] <- reply.Values
 		if len(reply.Values) == 1 {
 			responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding a clippy point to <@"+reply.Values[0]+">")
 		} else if len(reply.Values) > 1 {
 			responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Awarding clippy points to <@"+strings.Join(reply.Values, ">, <@")+">")
 		}
 
-		recordAward(i)
+		//recordAward(i)
+		channels[i.Message.ID] <- reply.Values
 	},
 	awardedUserSelected: func(bot *discordgo.Session, i *discordgo.InteractionCreate) {
 		responses[ephemeralContent].(msgResponseType)(bot, i.Interaction, "Already awarded to xyz")
@@ -57,28 +57,8 @@ func newConfig(awarded *discordgo.User) clippy.User {
 	}
 }
 
-func recordAward(i *discordgo.InteractionCreate) {
-	var snowflakes []string
-	switch i.Type {
-	case discordgo.InteractionMessageComponent:
-		reply := i.MessageComponentData()
-		if len(reply.Values) == 0 {
-			return
-		}
-		for _, snowflake := range reply.Values {
-			snowflakes = append(snowflakes, snowflake)
-		}
-	case discordgo.InteractionApplicationCommand:
-		optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption)
-		for _, option := range i.ApplicationCommandData().Options {
-			optionMap[option.Name] = option
-		}
-
-		if option, ok := optionMap[maskedUser]; ok {
-			val := option.UserValue(bot.session)
-			snowflakes = append(snowflakes, val.ID)
-		}
-	}
+func recordAward(i *discordgo.InteractionCreate, snowflakes []string) {
+	msg, _ := bot.session.InteractionResponse(i.Interaction)
 
 	for _, snowflake := range snowflakes {
 		awarded, err := bot.session.User(snowflake)
@@ -110,7 +90,7 @@ func recordAward(i *discordgo.InteractionCreate) {
 			GuildID:         guild.ID,
 			Channel:         channel.Name,
 			ChannelID:       channel.ID,
-			MessageID:       i.Interaction.Message.ID,
+			MessageID:       msg.ID,
 			OriginUsername:  i.Member.User.Username,
 			OriginSnowflake: i.Member.User.ID,
 			InteractionID:   i.ID,
