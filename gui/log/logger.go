@@ -37,7 +37,7 @@ func (r ResultMsg) String() string {
 	if r.message == "" {
 		return dotStyle.Render(strings.Repeat(".", 30))
 	}
-	return fmt.Sprintf("🍔 [%s] Ate %s",
+	return fmt.Sprintf("[%s] %s",
 		// show as hour i.e. 15:23
 		durationStyle.Render(r.time.Format("15:04")),
 		r.message,
