@@ -75,7 +75,10 @@ func (c Cache) synchronizePoints(snowflake string) {
 	c.Mutex.RUnlock()
 	countedAwards := c.countAwards(snowflake)
 	if configPoints == countedAwards {
+		program.Send(fmt.Sprintf("User %v has %v points, which is correct.", snowflake, configPoints))
 		return
+	} else {
+		program.Send(fmt.Sprintf("User %v has %v points, but %v awards.", snowflake, configPoints, countedAwards))
 	}
 	c.Mutex.Lock()
 	c.Map[snowflake].Config.Points = countedAwards
@@ -100,7 +103,8 @@ func (c Cache) QueryPoints(request Request) int {
 	c.Mutex.RLock()
 	_, ok := c.Map[request.Snowflake]
 	c.Mutex.RUnlock()
-	if ok {
+	// TODO Check if this is necessary
+	if !ok {
 		c.GetConfig(request.Snowflake)
 	}
 	c.Mutex.RLock()
