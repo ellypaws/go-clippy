@@ -67,6 +67,7 @@ func (c Cache) addPointRecord(user *User) {
 	_, ok := c.Map[user.Snowflake]
 	c.Mutex.RUnlock()
 	if !ok {
+		program.Send(logger.Message(fmt.Sprintf("User %v not in cache", user.Snowflake)))
 		var exist bool
 		user, exist = c.GetConfig(user.Snowflake)
 		if !exist {
@@ -87,7 +88,7 @@ func (c Cache) addPointRecord(user *User) {
 		program.Send(logger.Message(fmt.Sprintf("points mismatch, still at %v", user.Points)))
 		return
 	}
-	program.Send(logger.Message(fmt.Sprintln("c.Map[user.Snowflake].Config.Points", c.Map[user.Snowflake].Config.Points, "user.Points", user.Points)))
+	program.Send(logger.Message(fmt.Sprintf("c.Map[%v].Config.Points = %v", user.Snowflake, user.Points)))
 
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
