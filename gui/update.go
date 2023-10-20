@@ -24,5 +24,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-	return m, nil
+	return m.propagate(msg)
+	//return m, nil
+}
+
+func (m Model) propagate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var commands []tea.Cmd
+	model, cmd := m.table.Update(msg)
+	commands = append(commands, cmd)
+	m.table = &model
+	m.help, cmd = m.help.Update(msg)
+	return m, cmd
 }

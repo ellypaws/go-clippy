@@ -8,8 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	zone "github.com/lrstanley/bubblezone"
-	"winsleepd/cmd/tui/service"
-	"winsleepd/cmd/tui/table"
 )
 
 var (
@@ -51,13 +49,6 @@ func (m DialogModel) Init() tea.Cmd {
 
 func (m DialogModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case table.Query:
-		if service.Get().IsInstalled() {
-			m.Active = "confirm"
-		} else {
-			m.Active = "cancel"
-		}
-		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 	case tea.MouseMsg:
@@ -70,13 +61,7 @@ func (m DialogModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.hover = ""
 		}
 		if msg.Type == tea.MouseLeft {
-			if zone.Get(m.Id + "confirm").InBounds(msg) {
-				service.Get().Install(false)
-				m.Active = "confirm"
-			} else if zone.Get(m.Id + "cancel").InBounds(msg) {
-				service.Get().Uninstall()
-				m.Active = "cancel"
-			}
+
 		}
 	}
 	return m, nil
