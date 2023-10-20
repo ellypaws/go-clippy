@@ -194,6 +194,8 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			recordAward(i)
 		}
 		var points = make(map[string]int)
+		// TODO: Check why we need to wait for cache to catch up
+		time.Sleep(5 * time.Second)
 		for _, snowflake := range snowflakes {
 			points[snowflake] = clippy.GetCache().QueryPoints(clippy.Request{
 				Snowflake: snowflake,
