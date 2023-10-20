@@ -74,6 +74,9 @@ func init() {
 }
 
 func (BOT) Run(p *tea.Program) {
+	// pass the program to a clippy query
+	clippy.StoreProgram(p)
+
 	bot.p = p
 	registerHandlers(bot.session)
 	err := bot.session.Open()
@@ -102,9 +105,6 @@ func (BOT) Run(p *tea.Program) {
 
 	bot.p.Send(logger.Message("Registering commands"))
 	registerCommands(bot)
-
-	// pass the program to a clippy query
-	clippy.StoreProgram(p)
 
 	defer func(session *discordgo.Session) {
 		err := session.Close()

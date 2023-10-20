@@ -231,5 +231,7 @@ func sortUserPoints(users []userPoints) []userPoints {
 var program *tea.Program
 
 func StoreProgram(p *tea.Program) {
+	p.Send(logger.Message("Storing program"))
 	program = p
+	program.Send(logger.Message("Program stored"))
 }
