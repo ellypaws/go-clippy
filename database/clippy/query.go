@@ -64,7 +64,7 @@ func (moderator Moderator) Record() {
 // then [user.Record] will update the Cache as well
 func (c Cache) addPointRecord(user *User) {
 	c.Mutex.RLock()
-	u, ok := c.Map[user.Snowflake]
+	_, ok := c.Map[user.Snowflake]
 	c.Mutex.RUnlock()
 	if !ok {
 		var exist bool
@@ -73,21 +73,21 @@ func (c Cache) addPointRecord(user *User) {
 			log.Printf("User %v does not exist", user.Snowflake)
 			return
 		}
-		c.Mutex.RLock()
-		u = c.Map[user.Snowflake]
-		c.Mutex.RUnlock()
 	}
 	//log.Println("current points: ", user.Points)
 	program.Send(logger.Message(fmt.Sprintf("current points: %v", user.Points)))
+	old := user.Points
 	user.Points++
 	//log.Println("new points: ", user.Points)
-	program.Send(logger.Message(fmt.Sprintf("new points: %v", user.Points)))
+	program.Send(logger.Message(fmt.Sprintf("adding one point to user: @%v", user.Username)))
 
 	c.synchronizePoints(user.Snowflake)
-	if user.Points != u.Config.Points {
+	if user.Points == old {
 		//log.Printf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)
-		program.Send(logger.Message(fmt.Sprintf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)))
+		program.Send(logger.Message(fmt.Sprintf("points mismatch, still at %v", user.Points)))
+		return
 	}
+	program.Send(logger.Message(fmt.Sprintln("c.Map[user.Snowflake].Config.Points", c.Map[user.Snowflake].Config.Points, "user.Points", user.Points)))
 
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
@@ -137,6 +137,9 @@ func (c Cache) updateAwards(award *Award) {
 
 	if ok {
 		user.Awards = append(user.Awards, award)
+		c.Mutex.Lock()
+		defer c.Mutex.Unlock()
+		c.Map[award.Snowflake] = user
 	} else {
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
@@ -155,6 +158,9 @@ func (c Cache) updateCachedConfig(config User) {
 
 	if ok {
 		user.Config = config
+		c.Mutex.Lock()
+		defer c.Mutex.Unlock()
+		c.Map[config.Snowflake] = user
 	} else {
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
