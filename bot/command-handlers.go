@@ -200,21 +200,19 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			})
 		}
 
-		var awardedUsers string
+		var awardedUsers []string
 		for _, snowflake := range snowflakes {
-			var pointsString string
-			if points[snowflake] != 0 {
-				pointsString = fmt.Sprintf(" (%d points)", points[snowflake])
-			} else {
-				pointsString = " (-)"
+			pointsString := "-"
+			if points[snowflake] > 0 {
+				pointsString = fmt.Sprintf("%d", points[snowflake])
 			}
-			awardedUsers += fmt.Sprintf("<@%v>%v, ", snowflake, pointsString)
+			awardedUsers = append(awardedUsers, fmt.Sprintf("<@%v> (%v)", snowflake, pointsString))
 		}
 
-		awardedUsers = awardedUsers[:len(awardedUsers)-2] // Remove the trailing comma and space
+		awardedUsersString := strings.Join(awardedUsers, ",")
 
 		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction,
-			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel, awardedUsers),
+			fmt.Sprintf("<#%v> is now solved and awarded to users %v", channel, awardedUsersString),
 		)
 
 	},
@@ -280,8 +278,15 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 			return
 		}
 
-		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding clippy points to <@%v>",
-			authorSnowflake))
+		points := clippy.GetCache().QueryPoints(clippy.Request{
+			Snowflake: authorSnowflake,
+		})
+		pointsString := "-"
+		if points > 0 {
+			pointsString = fmt.Sprintf("%d", points)
+		}
+		responses[editInteractionResponse].(msgReturnType)(bot, i.Interaction, fmt.Sprintf("Awarding clippy points to <@%v> (%v)",
+			authorSnowflake, pointsString))
 
 		// TODO: We can probably extract this
 		if _, ok := clippy.GetCache().GetConfig(authorSnowflake); !ok {
