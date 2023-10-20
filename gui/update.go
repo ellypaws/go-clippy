@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbletea"
 	"go-clippy/gui/log"
@@ -22,6 +23,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
+		}
+		switch {
+		case key.Matches(msg, m.help.Keys.Settings):
+			m.table = m.table.Toggle()
+			if m.table.Visible() {
+				m.logger.LastResults = 5
+			} else {
+				m.logger.LastResults = 15
+			}
+			return m, nil
 		}
 	}
 	return m.propagate(msg)

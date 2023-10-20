@@ -45,9 +45,10 @@ func (r ResultMsg) String() string {
 }
 
 type Model struct {
-	spinner  spinner.Model
-	results  []ResultMsg
-	quitting bool
+	spinner     spinner.Model
+	results     []ResultMsg
+	quitting    bool
+	LastResults int
 }
 
 func NewSender() *Model {
@@ -55,8 +56,9 @@ func NewSender() *Model {
 	s := spinner.New()
 	s.Style = spinnerStyle
 	return &Model{
-		spinner: s,
-		results: make([]ResultMsg, numLastResults),
+		spinner:     s,
+		results:     make([]ResultMsg, numLastResults),
+		LastResults: numLastResults,
 	}
 }
 

@@ -40,8 +40,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) Toggle() Model {
+func (m *Model) Toggle() *Model {
 	m.visible = !m.visible
+	m.table.Blur()
+	m.table.UpdateViewport()
 	return m
 }
 

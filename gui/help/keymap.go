@@ -16,6 +16,7 @@ type keyMap struct {
 	Reset    key.Binding
 	PageUp   key.Binding
 	PageDown key.Binding
+	Settings key.Binding
 	Quit     key.Binding
 }
 
@@ -40,10 +41,6 @@ var keys = keyMap{
 		key.WithKeys("?"),
 		key.WithHelp("?", "toggle help"),
 	),
-	Quit: key.NewBinding(
-		key.WithKeys("q", "esc", "ctrl+c"),
-		key.WithHelp("q", "quit"),
-	),
 	Reset: key.NewBinding(
 		key.WithKeys("r"),
 		key.WithHelp("r", "reset points"),
@@ -59,5 +56,13 @@ var keys = keyMap{
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "select"),
+	),
+	Settings: key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "settings"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q", "esc", "ctrl+c"),
+		key.WithHelp("q", "quit"),
 	),
 }

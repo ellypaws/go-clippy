@@ -25,7 +25,7 @@ func New() Model {
 // ShortHelp returns keybindings to be shown in the mini help view. It's part
 // of the key.Map interface.
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit, k.Reset}
+	return []key.Binding{k.Help, k.Quit, k.Settings}
 }
 
 // FullHelp returns keybindings for the expanded help view. It's part of the
