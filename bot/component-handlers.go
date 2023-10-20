@@ -58,7 +58,11 @@ func newConfig(awarded *discordgo.User) clippy.User {
 }
 
 func recordAward(i *discordgo.InteractionCreate, snowflakes []string) {
-	msg, _ := bot.session.InteractionResponse(i.Interaction)
+	msg, err := bot.session.InteractionResponse(i.Interaction)
+	if err != nil {
+		errorEdit(bot.session, i.Interaction, err)
+		return
+	}
 
 	for _, snowflake := range snowflakes {
 		awarded, err := bot.session.User(snowflake)
