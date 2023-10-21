@@ -71,14 +71,15 @@ func (m Model) UpdateLeaderboard(max int) table.Model {
 
 func New() *Model {
 	columns := []table.Column{
-		{Title: "#", Width: 4},
+		{Title: "#", Width: 2},
 		{Title: "Username", Width: 12},
 		{Title: "Snowflake", Width: 12},
-		{Title: "Points", Width: 5},
+		{Title: "Points", Width: 8},
+		{Title: "Private", Width: 8},
 	}
 
 	rows := []table.Row{
-		{"1", "Username", "000000", "15"},
+		{"1", "Username", "000000", "15", "false"},
 	}
 
 	t := table.New(

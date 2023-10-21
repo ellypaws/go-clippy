@@ -129,11 +129,16 @@ func (c Cache) precacheAwards(request Request) {
 //		{Title: "#", Width: 4},
 //		{Title: "Username", Width: 12},
 //		{Title: "Snowflake", Width: 12},
-//		{Title: "Points", Width: 5},
+//		{Title: "Points", Width: 8},
+//		{Title: "Private", Width: 8},
+//	}
+//
+//	rows := []table.Row{
+//		{"1", "Username", "000000", "15", "false"},
 //	}
 
 func (c Cache) LeaderboardTable(max int, request Request) []table.Row {
-	users := getPublicUsers()
+	users := getAllUsers()
 	if len(c.Map) == 0 {
 		c.precacheAwards(request)
 	}
@@ -160,6 +165,7 @@ func (c Cache) LeaderboardTable(max int, request Request) []table.Row {
 			user.Username,
 			user.Snowflake,
 			fmt.Sprintf("%d", user.Points),
+			fmt.Sprintf("%v", c.Private(user.Snowflake)),
 		})
 	}
 
