@@ -8,6 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	_ "go-clippy/database"
 	"go-clippy/database/clippy"
+	"go-clippy/gui/load"
 	logger "go-clippy/gui/log"
 	"log"
 	"os"
@@ -73,11 +74,23 @@ func init() {
 	log.Println("Bot initialized:", bot)
 }
 
+var currentProgress int
+var totalProgress int
+
 func (BOT) Run(p *tea.Program) {
 	// pass the program to a clippy query
 	clippy.StoreProgram(p)
 
 	bot.p = p
+
+	// calculate everything
+	totalProgress = len(commands) + len(components) + len(commandHandlers) + len(componentHandlers)
+	p.Send(load.Goal{
+		Current: currentProgress,
+		Total:   totalProgress,
+		Show:    true,
+	})
+
 	registerHandlers(bot.session)
 	err := bot.session.Open()
 	if err != nil {
@@ -164,6 +177,12 @@ func registerHandlers(session *discordgo.Session) {
 			}
 		}
 	})
+	currentProgress = len(commandHandlers) + len(componentHandlers) + len(components)
+	bot.p.Send(load.Goal{
+		Current: currentProgress,
+		Total:   totalProgress,
+		Show:    true,
+	})
 	session.AddHandler(func(session *discordgo.Session, r *discordgo.Ready) {
 		bot.p.Send(logger.Message(fmt.Sprintf("Logged in as: %v#%v", session.State.User.Username, session.State.User.Discriminator)))
 	})
@@ -193,5 +212,11 @@ func registerCommands(bot *BOT) {
 		bot.registeredCommands[key] = cmd
 		//log.Println("Registered command:", cmd.Name, cmd.ID)
 		bot.p.Send(logger.Message(fmt.Sprintf("Registered command: %v", cmd.Name)))
+		currentProgress++
+		bot.p.Send(load.Goal{
+			Current: currentProgress,
+			Total:   totalProgress,
+			Show:    true,
+		})
 	}
 }

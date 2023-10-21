@@ -17,6 +17,9 @@ func (m Model) View() string {
 	} else {
 		out.WriteString(m.logger.View())
 	}
+	if m.progress.Visible() {
+		out.WriteString(m.progress.View())
+	}
 	out.WriteString(m.help.View())
 	return zone.Scan(out.String())
 }

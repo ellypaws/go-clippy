@@ -2,8 +2,10 @@ package gui
 
 import (
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbletea"
+	"go-clippy/gui/load"
 	"go-clippy/gui/log"
 	"go-clippy/gui/table"
 )
@@ -35,6 +37,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.table = &tbl
 			return m, cmd
 		}
+	case progress.FrameMsg, load.Progress, load.Goal:
+		*m.progress, cmd = m.progress.Update(msg)
+		return m, cmd
 	}
 	return m.propagate(msg)
 	//return m, nil
@@ -42,10 +47,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) propagate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var commands []tea.Cmd
-	model, cmd := m.table.Update(msg)
+	var cmd tea.Cmd
+	*m.table, cmd = m.table.Update(msg)
 	commands = append(commands, cmd)
-	m.table = &model
 	m.help, cmd = m.help.Update(msg)
+	commands = append(commands, cmd)
+	*m.progress, cmd = m.progress.Update(msg)
 	commands = append(commands, cmd)
 	return m, tea.Batch(commands...)
 }
