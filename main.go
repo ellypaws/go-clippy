@@ -11,7 +11,7 @@ import (
 func main() {
 	zone.NewGlobal()
 	p := tea.NewProgram(gui.NewModel(),
-		tea.WithAltScreen(),
+		//tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 		tea.WithMouseAllMotion(),
 	)
