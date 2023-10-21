@@ -2,6 +2,7 @@ package clippy
 
 import (
 	"fmt"
+	"github.com/charmbracelet/bubbles/table"
 	"sync"
 )
 
@@ -122,6 +123,47 @@ func (c Cache) precacheAwards(request Request) {
 		c.Mutex.Unlock()
 	}
 	c.allAwards(request)
+}
+
+//	columns := []table.Column{
+//		{Title: "#", Width: 4},
+//		{Title: "Username", Width: 12},
+//		{Title: "Snowflake", Width: 12},
+//		{Title: "Points", Width: 5},
+//	}
+
+func (c Cache) LeaderboardTable(max int, request Request) []table.Row {
+	users := getPublicUsers()
+	if len(c.Map) == 0 {
+		c.precacheAwards(request)
+	}
+
+	userPointsSlice = []userPoints{}
+	for _, u := range users {
+		userPointsSlice = append(userPointsSlice, userPoints{
+			Snowflake: u.Snowflake,
+			Username:  u.Username,
+			Points:    u.Points,
+		})
+	}
+
+	sortUserPoints(userPointsSlice)
+	if max == 0 {
+		max = len(userPointsSlice)
+	}
+	userPointsSlice = userPointsSlice[:min(max, len(userPointsSlice))]
+
+	var rows []table.Row
+	for i, user := range userPointsSlice {
+		rows = append(rows, table.Row{
+			fmt.Sprintf("%d", i+1),
+			user.Username,
+			user.Snowflake,
+			fmt.Sprintf("%d", user.Points),
+		})
+	}
+
+	return rows
 }
 
 func (c Cache) LeaderboardPrecached(max int, request Request) string {

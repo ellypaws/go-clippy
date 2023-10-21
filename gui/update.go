@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbletea"
 	"go-clippy/gui/log"
+	"go-clippy/gui/table"
 )
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -32,7 +33,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.logger.LastResults = 15
 			}
-			return m, nil
+			tbl, cmd := m.table.Update(tea.Msg(table.Leaderboard{}))
+			m.table = &tbl
+			return m, cmd
 		}
 	}
 	return m.propagate(msg)
@@ -45,5 +48,6 @@ func (m Model) propagate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	commands = append(commands, cmd)
 	m.table = &model
 	m.help, cmd = m.help.Update(msg)
-	return m, cmd
+	commands = append(commands, cmd)
+	return m, tea.Batch(commands...)
 }

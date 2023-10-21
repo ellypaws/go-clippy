@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"go-clippy/database/clippy"
 )
 
 var baseStyle = lipgloss.NewStyle().
@@ -35,6 +36,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
 			)
 		}
+	case Leaderboard:
+		m.table = m.UpdateLeaderboard(15)
+		return m, nil
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
@@ -56,6 +60,13 @@ func (m Model) View() string {
 		return baseStyle.Render("")
 	}
 	return baseStyle.Render(m.table.View()) + "\n"
+}
+
+type Leaderboard struct{}
+
+func (m Model) UpdateLeaderboard(max int) table.Model {
+	m.table.SetRows(clippy.GetCache().LeaderboardTable(max, clippy.Request{}))
+	return m.table
 }
 
 func New() *Model {
