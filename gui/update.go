@@ -21,11 +21,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.logger, cmd = m.logger.Update(msg)
 		return m, cmd
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q", "esc":
-			return m, tea.Quit
-		}
 		switch {
+		case key.Matches(msg, m.help.Keys.Quit):
+			return m, tea.Quit
 		case key.Matches(msg, m.help.Keys.Settings):
 			m.table = m.table.Toggle()
 			if m.table.Visible() {

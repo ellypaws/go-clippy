@@ -46,7 +46,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 func (m *Model) Toggle() *Model {
 	m.visible = !m.visible
-	m.table.Blur()
+	if m.visible {
+		m.table.Focus()
+	} else {
+		m.table.Blur()
+	}
 	m.table.UpdateViewport()
 	return m
 }
@@ -87,6 +91,7 @@ func New() *Model {
 		table.WithRows(rows),
 		table.WithFocused(true),
 		table.WithHeight(7),
+		table.WithKeyMap(table.DefaultKeyMap()),
 	)
 
 	s := table.DefaultStyles()
