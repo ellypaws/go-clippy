@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbletea"
+	"go-clippy/gui/input"
 	"go-clippy/gui/load"
 	"go-clippy/gui/log"
 	"go-clippy/gui/table"
@@ -40,6 +41,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case progress.FrameMsg, load.Progress, load.Goal:
 		*m.progress, cmd = m.progress.Update(msg)
 		return m, cmd
+	case table.PromptPoints:
+		//m.table.Toggle()
+		m.input.ReceivePoints(msg.Points, msg.Snowflake)
+		return m, nil
+	case input.Points:
+		*m.table = m.table.SetPoints(msg.Points, msg.Snowflake)
 	}
 	return m.propagate(msg)
 	//return m, nil
@@ -53,6 +60,8 @@ func (m Model) propagate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.help, cmd = m.help.Update(msg)
 	commands = append(commands, cmd)
 	*m.progress, cmd = m.progress.Update(msg)
+	commands = append(commands, cmd)
+	*m.input, cmd = m.input.Update(msg)
 	commands = append(commands, cmd)
 	return m, tea.Batch(commands...)
 }

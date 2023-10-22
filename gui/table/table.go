@@ -32,9 +32,10 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			return m, tea.Batch(
-				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
-			)
+			if m.table.Focused() {
+				m.table.Blur()
+				return m, promptPoints(m.table.SelectedRow()[3], m.table.SelectedRow()[2])
+			}
 		}
 	case Leaderboard:
 		m.table = m.UpdateLeaderboard(15)
@@ -42,6 +43,30 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
+}
+
+func (m Model) SetPoints(points string, snowflake string) Model {
+	cur := m.table.Rows()
+	i := m.table.Cursor()
+	cur[i][3] = points
+	//cur[i][4] = snowflake
+	m.table.SetRows(cur)
+	m.table.Focus()
+	return m
+}
+
+func promptPoints(points string, snowflake string) tea.Cmd {
+	return func() tea.Msg {
+		return PromptPoints{
+			Points:    points,
+			Snowflake: snowflake,
+		}
+	}
+}
+
+type PromptPoints struct {
+	Points    string
+	Snowflake string
 }
 
 func (m *Model) Toggle() *Model {
@@ -61,7 +86,7 @@ func (m Model) Visible() bool {
 
 func (m Model) View() string {
 	if !m.visible {
-		return baseStyle.Render("")
+		return baseStyle.Render("Press 's' to adjust user points.")
 	}
 	return baseStyle.Render(m.table.View()) + "\n"
 }

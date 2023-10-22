@@ -3,6 +3,7 @@ package gui
 import (
 	"github.com/charmbracelet/bubbletea"
 	"go-clippy/gui/help"
+	"go-clippy/gui/input"
 	"go-clippy/gui/load"
 	"go-clippy/gui/log"
 	"go-clippy/gui/table"
@@ -12,6 +13,7 @@ type Model struct {
 	logger   *logger.Model
 	table    *table.Model
 	progress *load.Model
+	input    *input.Model
 	help     help.Model
 	height   int
 	width    int
@@ -30,6 +32,7 @@ func NewModel() Model {
 		logger:   logger.NewSender(),
 		table:    table.New(),
 		progress: load.New(),
+		input:    input.New(),
 		help:     help.New(),
 	}
 }

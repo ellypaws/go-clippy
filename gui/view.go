@@ -8,18 +8,18 @@ import (
 
 func (m Model) View() string {
 	out := strings.Builder{}
-	if m.table.Visible() {
-		out.WriteString(
+	out.WriteString(
+		lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
 			lipgloss.JoinHorizontal(lipgloss.Center,
-				m.logger.View(),
-				m.table.View(),
-			))
-	} else {
-		out.WriteString(m.logger.View())
-	}
-	if m.progress.Visible() {
-		out.WriteString(m.progress.View())
-	}
+				lipgloss.JoinVertical(lipgloss.Center,
+					m.progress.View(),
+					m.logger.View(),
+				),
+				lipgloss.JoinVertical(lipgloss.Center,
+					m.table.View(),
+					m.input.View(),
+				),
+			)))
 	out.WriteString(m.help.View())
 	return zone.Scan(out.String())
 }
