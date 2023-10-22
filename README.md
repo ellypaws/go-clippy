@@ -7,22 +7,22 @@ It uses [DiscordGo](https://github.com/bwmarrin/discordgo) for the bot, and [Bin
 
 To run the bot, you need the Bot token from the [Discord Developer Portal](https://discord.com/developers/applications). Once you have the token, you can run the bot using the following command:
 
-- **token** (`-token`): The bot access token.
+- **token** (`token`): The bot access token.
     ```
-    -token YOUR_BOT_ACCESS_TOKEN
+    token YOUR_BOT_ACCESS_TOKEN
     ```
-- **guild** (`-guild`): The Guild ID. If not provided, the bot registers commands globally.
+- **guild** (`guild`): The Guild ID. If not provided, the bot registers commands globally.
     ```
-    -guild GUILD_ID
+    guild GUILD_ID
     ```
-- **rmcmd** (`-rmcmd`): This flag determines whether to remove all commands after shutting down. This is particularly useful for cleanup. By default, this is set to `false`.
+- **rmcmd** (`rmcmd`): This flag determines whether to remove all commands after shutting down. This is particularly useful for cleanup. By default, this is set to `false`.
     ```
-    -rmcmd true
+    rmcmd=true
     ```
   
 ### Example:
 ```
-go-clippy.exe -token YOUR_BOT_ACCESS_TOKEN
+go-clippy.exe token YOUR_BOT_ACCESS_TOKEN
 ```
 
 The token can also be set by setting the `token` environment variable.
@@ -41,7 +41,7 @@ Once the bot is running, you can use the following commands to interact with it:
    |--------------------------------|------------------|
    | <kbd>Ctrl</kbd> + <kbd>C</kbd> | Quit the program |
 
-1. [ ] TUI to be implemented
+1. [x] TUI to be implemented
 
 ### Slash Commands
 
@@ -96,10 +96,10 @@ Example:
 
 ### Todo
 
-1. [ ] Actually run the bot
-2. [ ] Implement [bubbletea](https://github.com/charmbracelet/bubbletea.git) TUI
+1. [x] Actually run the bot
+2. [x] Implement [bubbletea](https://github.com/charmbracelet/bubbletea.git) TUI
 3. [ ] Leaderboard
-4. [ ] Points system
+4. [x] Points system
 
 
 <img src="https://go.dev/images/gophers/ladder.svg" width="48" alt="Go Gopher climbing a ladder." align="right">
