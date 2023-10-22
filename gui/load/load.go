@@ -61,7 +61,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			if m.visible {
 				m.visible = false
 			}
-			return m, nil
+			return m, m.progress.SetPercent(1)
 		}
 		if m.visible != msg.Show {
 			m.visible = msg.Show
