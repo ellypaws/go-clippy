@@ -84,7 +84,7 @@ func (m Model) Visible() bool {
 
 func (m Model) View() string {
 	if !m.visible {
-		return ""
+		return "Loaded"
 	}
 	return m.progress.View()
 }
