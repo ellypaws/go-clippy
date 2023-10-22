@@ -101,7 +101,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
 			if s == "enter" && m.active == len(m.inputs) {
-				return m, m.NewPoints()
+				return m.newPoints()
 			}
 			//
 			// Cycle indexes
@@ -172,15 +172,15 @@ func (m *Model) ReceivePoints(points string, snowflake string) tea.Cmd {
 	return nil
 }
 
-func (m *Model) NewPoints() tea.Cmd {
+func (m *Model) newPoints() (Model, tea.Cmd) {
 	m.enabled = false
 	if m.inputs[PointsInput].Value() == "" {
-		return nil
+		return *m, nil
 	}
 	m.setPoints.Points = m.inputs[PointsInput].Value()
 	m.inputs[PointsInput].Reset()
 	m.inputs[PointsInput].Blur()
-	return func() tea.Msg {
+	return *m, func() tea.Msg {
 		return m.setPoints
 	}
 }
@@ -202,7 +202,7 @@ func (m Model) View() string {
 	if m.active == len(m.inputs) {
 		button = &focusedButton
 	}
-	b.WriteString(fmt.Sprintf("%v:%v", m.focus, m.active))
+	//b.WriteString(fmt.Sprintf("%v:%v", m.focus, m.active))
 	fmt.Fprintf(&b, "\n\n%s\n\n", *button)
 
 	//b.WriteString(helpStyle.Render("cursor mode is "))
