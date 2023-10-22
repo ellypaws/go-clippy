@@ -119,6 +119,11 @@ func (BOT) Run(p *tea.Program) {
 	bot.p.Send(logger.Message("Registering commands"))
 	registerCommands(bot)
 
+	bot.p.Send(load.Goal{
+		Current: totalProgress,
+		Total:   totalProgress,
+	})
+
 	defer func(session *discordgo.Session) {
 		err := session.Close()
 		if err != nil {
