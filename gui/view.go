@@ -7,6 +7,9 @@ import (
 )
 
 func (m Model) View() string {
+	if m.width == 0 || m.height == 0 {
+		return "Initializing..."
+	}
 	out := strings.Builder{}
 	out.WriteString(
 		lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center,
