@@ -407,8 +407,15 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 		case discordgo.InteractionApplicationCommandAutocomplete:
 			var choices []*discordgo.ApplicationCommandOptionChoice
 			if input != "" {
+				var username string = "<unknown>"
+				if i.Member != nil {
+					username = i.Member.User.Username
+				}
+				if i.User != nil {
+					username = i.User.Username
+				}
 				//log.Printf("Querying for [%v] %v", platform, input)
-				GetBot().p.Send(logger.Message(fmt.Sprintf("Querying for [%v] %v", platform, input)))
+				GetBot().p.Send(logger.Message(fmt.Sprintf("@%v Querying for [%v] %v", username, platform, input)))
 
 				cache := functions.Cached(platform)
 				results := fuzzy.FindFrom(input, cache)
