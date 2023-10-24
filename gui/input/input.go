@@ -5,6 +5,7 @@ package input
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -204,8 +205,17 @@ func (m *Model) newPoints() (Model, tea.Cmd) {
 	if m.inputs[PointsInput].Value() == "" {
 		return *m, nil
 	}
-	m.setPoints.Points = m.inputs[PointsInput].Value()
-	m.setPoints.Private = m.inputs[PrivacyInput].Value()
+	m.setPoints = Points{
+		Points:    m.inputs[PointsInput].Placeholder,
+		Snowflake: m.setPoints.Snowflake,
+		Private:   m.inputs[PrivacyInput].Placeholder,
+	}
+	if m.inputs[PointsInput].Value() != "" {
+		m.setPoints.Points = m.inputs[PointsInput].Value()
+	}
+	if slices.Contains([]string{"true", "false"}, m.inputs[PrivacyInput].Value()) {
+		m.setPoints.Private = m.inputs[PrivacyInput].Value()
+	}
 	m.inputs[PointsInput].Reset()
 	m.inputs[PointsInput].Blur()
 	return *m, func() tea.Msg {
