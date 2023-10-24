@@ -218,6 +218,8 @@ func (m *Model) newPoints() (Model, tea.Cmd) {
 	}
 	m.inputs[PointsInput].Reset()
 	m.inputs[PointsInput].Blur()
+	m.inputs[PrivacyInput].Reset()
+	m.inputs[PrivacyInput].Blur()
 	return *m, func() tea.Msg {
 		return m.setPoints
 	}
