@@ -28,6 +28,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.help.Keys.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.help.Keys.Settings):
+			if m.input.Enabled() {
+				return m.propagate(msg)
+			}
 			m.table = m.table.Toggle()
 			if m.table.Visible() {
 				m.logger.LastResults = 5
@@ -41,12 +44,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case progress.FrameMsg, load.Progress, load.Goal:
 		*m.progress, cmd = m.progress.Update(msg)
 		return m, cmd
-	case table.PromptPoints:
+	case table.PromptUser:
 		//m.table.Toggle()
-		m.input.ReceivePoints(msg.Points, msg.Snowflake)
+		m.input.ReceivePoints(msg.Points, msg.Snowflake, msg.Private)
 		return m, nil
 	case input.Points:
-		*m.table = m.table.SetPoints(msg.Points, msg.Snowflake)
+		*m.table = m.table.SetPoints(msg.Points, msg.Snowflake, msg.Private)
 	}
 	return m.propagate(msg)
 	//return m, nil

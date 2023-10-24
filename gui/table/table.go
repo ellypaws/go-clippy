@@ -5,6 +5,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"go-clippy/database/clippy"
+	"go-clippy/gui/input"
+	"strconv"
 )
 
 var baseStyle = lipgloss.NewStyle().
@@ -34,7 +36,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case "enter":
 			if m.table.Focused() {
 				m.table.Blur()
-				return m, promptPoints(m.table.SelectedRow()[3], m.table.SelectedRow()[2])
+				return m, promptPoints(m.table.SelectedRow()[3], m.table.SelectedRow()[2], m.table.SelectedRow()[4])
 			}
 		}
 	case Leaderboard:
@@ -45,28 +47,31 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) SetPoints(points string, snowflake string) Model {
+func (m Model) SetPoints(points string, snowflake string, private string) Model {
 	cur := m.table.Rows()
 	i := m.table.Cursor()
+	//cur[i][2] = snowflake
 	cur[i][3] = points
-	//cur[i][4] = snowflake
+	cur[i][4] = private
 	m.table.SetRows(cur)
 	m.table.Focus()
 	return m
 }
 
-func promptPoints(points string, snowflake string) tea.Cmd {
+func promptPoints(points string, snowflake string, private string) tea.Cmd {
 	return func() tea.Msg {
-		return PromptPoints{
+		return PromptUser{
 			Points:    points,
 			Snowflake: snowflake,
+			Private:   private,
 		}
 	}
 }
 
-type PromptPoints struct {
+type PromptUser struct {
 	Points    string
 	Snowflake string
+	Private   string
 }
 
 func (m *Model) Toggle() *Model {
@@ -96,6 +101,17 @@ type Leaderboard struct{}
 func (m Model) UpdateLeaderboard(max int) table.Model {
 	m.table.SetRows(clippy.GetCache().LeaderboardTable(max, clippy.Request{}))
 	return m.table
+}
+
+func (m Model) UpdateUser(points input.Points) table.Model {
+	user, ok := clippy.GetCache().GetConfig(points.Snowflake)
+	if !ok {
+		return m.table
+	}
+	pointsInt, _ := strconv.Atoi(points.Points)
+	user.Points = pointsInt
+	user.Record()
+	return m.UpdateLeaderboard(len(m.table.Rows()))
 }
 
 func New() *Model {

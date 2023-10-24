@@ -5,6 +5,7 @@ package input
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/cursor"
@@ -27,8 +28,9 @@ var (
 
 const (
 	TokenInput = iota
-	PointsInput
 	PasswordInput
+	PointsInput
+	PrivacyInput
 	Submit
 )
 
@@ -42,7 +44,7 @@ type Model struct {
 
 func New() *Model {
 	m := Model{
-		inputs: make([]textinput.Model, 3),
+		inputs: make([]textinput.Model, 4),
 	}
 
 	var t textinput.Model
@@ -56,13 +58,30 @@ func New() *Model {
 			t.Placeholder = "Token"
 			t.PromptStyle = focusedStyle
 			t.TextStyle = focusedStyle
-		case PointsInput:
-			t.Placeholder = "Points"
-			t.CharLimit = 4
 		case PasswordInput:
 			t.Placeholder = "Password"
 			t.EchoMode = textinput.EchoPassword
 			t.EchoCharacter = '•'
+		case PointsInput:
+			t.Placeholder = "Points"
+			t.CharLimit = 4
+			t.Validate = func(s string) error {
+				// check if number
+				if _, err := strconv.Atoi(s); err != nil {
+					return fmt.Errorf("invalid number")
+				}
+				return nil
+			}
+		case PrivacyInput:
+			t.Placeholder = "true/false"
+			t.CharLimit = 5
+			t.Validate = func(s string) error {
+				// check if "true" or "false"
+				if strings.HasPrefix("true", s) || strings.HasPrefix("false", s) {
+					return nil
+				}
+				return fmt.Errorf("invalid privacy value")
+			}
 		}
 
 		m.inputs[i] = t
@@ -106,9 +125,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			//
 			// Cycle indexes
 			if s == "up" || s == "shift+tab" {
-				m.active = min(m.focus, Submit)
+				switch m.active {
+				case PointsInput:
+					m.active = max(m.active-1, PointsInput)
+				default:
+					m.active = min(m.focus, Submit)
+				}
 			} else {
-				m.active = Submit
+				m.active = min(m.active+1, Submit)
 			}
 
 			//if m.active > len(m.inputs) {
@@ -123,7 +147,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 			cmds := make([]tea.Cmd, len(m.inputs))
 			for i := 0; i <= len(m.inputs)-1; i++ {
-				if i == m.focus {
+				if m.active == i {
 					// Set focused state
 					cmds[i] = m.inputs[i].Focus()
 					m.inputs[i].PromptStyle = focusedStyle
@@ -158,18 +182,21 @@ func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m *Model) ReceivePoints(points string, snowflake string) tea.Cmd {
+func (m *Model) ReceivePoints(points string, snowflake string, privacy string) tea.Cmd {
 	m.enabled = true
 	m.active = PointsInput
 	m.focus = PointsInput
 	m.inputs[PointsInput].Placeholder = points
 	m.inputs[PointsInput].Reset()
-	m.inputs[PointsInput].Focus()
+	cmd := m.inputs[PointsInput].Focus()
+	m.inputs[PrivacyInput].Placeholder = privacy
+	m.inputs[PrivacyInput].Reset()
 	m.setPoints = Points{
 		Points:    points,
 		Snowflake: snowflake,
+		Private:   privacy,
 	}
-	return nil
+	return cmd
 }
 
 func (m *Model) newPoints() (Model, tea.Cmd) {
@@ -178,6 +205,7 @@ func (m *Model) newPoints() (Model, tea.Cmd) {
 		return *m, nil
 	}
 	m.setPoints.Points = m.inputs[PointsInput].Value()
+	m.setPoints.Private = m.inputs[PrivacyInput].Value()
 	m.inputs[PointsInput].Reset()
 	m.inputs[PointsInput].Blur()
 	return *m, func() tea.Msg {
@@ -185,9 +213,14 @@ func (m *Model) newPoints() (Model, tea.Cmd) {
 	}
 }
 
+func (m Model) Enabled() bool {
+	return m.enabled
+}
+
 type Points struct {
 	Points    string
 	Snowflake string
+	Private   string
 }
 
 func (m Model) View() string {
@@ -197,6 +230,11 @@ func (m Model) View() string {
 	var b strings.Builder
 
 	b.WriteString(m.inputs[min(m.focus, len(m.inputs)-1)].View())
+
+	if m.focus == PointsInput {
+		b.WriteString("\n")
+		b.WriteString(m.inputs[PrivacyInput].View())
+	}
 
 	button := &blurredButton
 	if m.active == len(m.inputs) {
