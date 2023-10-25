@@ -28,12 +28,13 @@ func GetCache() *Cache {
 	}
 }
 
-func (c Cache) Reset() {
+func (c Cache) Reset() *Cache {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	for k := range c.Map {
 		delete(c.Map, k)
 	}
+	return &c
 }
 
 func (c Cache) Private(snowflake string) bool {
@@ -90,11 +91,12 @@ func (c Cache) synchronizePoints(snowflake string) {
 	c.Map[snowflake].Config.Record()
 }
 
-func (c Cache) SynchronizeAllPoints() {
+func (c Cache) SynchronizeAllPoints() *Cache {
 	users := getAllUsers()
 	for _, user := range users {
 		c.synchronizePoints(user.Snowflake)
 	}
+	return &c
 }
 
 func (c Cache) QueryPoints(request Request) int {
