@@ -123,7 +123,7 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 	})
 	if !result.Any() {
 		c.Mutex.Lock()
-		c.Map[snowflake] = &CacheType{}
+		c.Map[snowflake] = &CachedUser{}
 		c.Mutex.Unlock()
 	}
 	return result
@@ -144,7 +144,7 @@ func (c Cache) updateAwards(award *Award) {
 	} else {
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
-		c.Map[award.Snowflake] = &CacheType{
+		c.Map[award.Snowflake] = &CachedUser{
 			Awards: []*Award{award},
 		}
 	}
@@ -165,7 +165,7 @@ func (c Cache) updateCachedConfig(config User) {
 	} else {
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
-		c.Map[config.Snowflake] = &CacheType{
+		c.Map[config.Snowflake] = &CachedUser{
 			Config: config,
 		}
 	}

@@ -6,13 +6,13 @@ import (
 	"sync"
 )
 
-type CacheType struct {
+type CachedUser struct {
 	Config User
 	Awards []*Award
 }
 
 type Cache struct {
-	Map   map[string]*CacheType
+	Map   map[string]*CachedUser
 	Mutex *sync.RWMutex
 }
 
@@ -23,7 +23,7 @@ func GetCache() *Cache {
 		return cache
 	}
 	return &Cache{
-		Map:   map[string]*CacheType{},
+		Map:   map[string]*CachedUser{},
 		Mutex: &sync.RWMutex{},
 	}
 }
@@ -119,7 +119,7 @@ func (c Cache) precacheAwards(request Request) {
 	users := getPublicUsers()
 	for _, user := range users {
 		c.Mutex.Lock()
-		c.Map[user.Snowflake] = &CacheType{
+		c.Map[user.Snowflake] = &CachedUser{
 			Config: *user,
 		}
 		c.Mutex.Unlock()
