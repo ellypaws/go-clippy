@@ -128,20 +128,10 @@ func (BOT) Run(p *tea.Program) {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
-	//log.Println("Press Ctrl+C to exit")
 	bot.p.Send(logger.Message("Press Ctrl+C to exit"))
 	<-stop
 
 	if *bot.removeCommands {
-		// // We need to fetch the commands, since deleting requires the command ID.
-		// // We are doing this from the returned commands on line 375, because using
-		// // this will delete all the commands, which might not be desirable, so we
-		// // are deleting only the commands that we added.
-		// registeredCommands, err := s.ApplicationCommands(s.State.User.ID, *GuildID)
-		// if err != nil {
-		// 	log.Fatalf("Could not fetch registered commands: %v", err)
-		// }
-
 		for _, command := range bot.registeredCommands {
 			bot.p.Send(logger.Message(fmt.Sprintf("Removing command: %v", command.Name)))
 			err := bot.session.ApplicationCommandDelete(bot.session.State.User.ID, *bot.guildID, command.ID)
@@ -210,7 +200,6 @@ func registerCommands(bot *BOT) {
 			log.Panicf("Cannot create '%v' command: %v", command.Name, err)
 		}
 		bot.registeredCommands[key] = cmd
-		//log.Println("Registered command:", cmd.Name, cmd.ID)
 		bot.p.Send(logger.Message(fmt.Sprintf("Registered command: %v", cmd.Name)))
 		currentProgress++
 		bot.p.Send(load.Goal{
