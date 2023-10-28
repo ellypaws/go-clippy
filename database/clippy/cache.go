@@ -87,8 +87,9 @@ func (c Cache) synchronizePoints(snowflake string) {
 	c.Mutex.Unlock()
 
 	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-	c.Map[snowflake].Config.Record()
+	config := c.Map[snowflake].Config
+	c.Mutex.RUnlock()
+	config.Record()
 }
 
 func (c Cache) SynchronizeAllPoints() *Cache {
