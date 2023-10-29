@@ -124,7 +124,7 @@ func New() *Model {
 	}
 
 	rows := []table.Row{
-		{"1", "Username", "000000", "15", "false"},
+		{"1", "Username", "000000", "00", "false"},
 	}
 
 	t := table.New(
