@@ -59,7 +59,7 @@ func (c Cache) countAwards(snowflake string) int {
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
 	if !ok || c.Map[snowflake].Awards == nil {
-		c.allAwards(Request{})
+		c.syncAwards(Request{})
 	}
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
@@ -129,7 +129,7 @@ func (c Cache) precacheAwards(request Request) {
 		}
 		c.Mutex.Unlock()
 	}
-	c.allAwards(request)
+	c.syncAwards(request)
 }
 
 //	columns := []table.Column{

@@ -17,7 +17,7 @@ type Request struct {
 
 // Record records the user's point to the database
 // it first checks if the user is in the cache for the user points
-// it calls [Cache.updateAwards] to update the Cache for the user's awards
+// it calls [Cache.recordAward] to update the Cache for the user's awards
 // then [Cache.addPointRecord] will be called to increment the user's points
 // it will also call [User.Record] to record the new points in the database,
 // and then it will call [Cache.updateCachedConfig] to update the Cache
@@ -31,7 +31,7 @@ func (point Award) Record() {
 	if !ok {
 		return
 	}
-	GetCache().updateAwards(&point)
+	GetCache().recordAward(&point)
 	GetCache().addPointRecord(user)
 }
 
@@ -98,7 +98,7 @@ func (c Cache) addPointRecord(user *User) {
 	user.Record()
 }
 
-func (c Cache) allAwards(request Request) *bingo.QueryResult[Award] {
+func (c Cache) syncAwards(request Request) *bingo.QueryResult[Award] {
 	result := Awards.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
 			snowflakeMatch := request.Snowflake == "" || point.Snowflake == request.Snowflake
@@ -107,7 +107,7 @@ func (c Cache) allAwards(request Request) *bingo.QueryResult[Award] {
 		},
 	})
 	for _, award := range result.Items {
-		c.updateAwards(award)
+		c.recordAward(award)
 	}
 	return result
 }
@@ -129,9 +129,9 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 	return result
 }
 
-// updateAwards updates the Cache for the user's awards
+// recordAward updates the Cache for the user's awards
 // if a user is not in the Cache, it will create a new entry and store the award
-func (c Cache) updateAwards(award *Award) {
+func (c Cache) recordAward(award *Award) {
 	c.Mutex.RLock()
 	user, ok := c.Map[award.Snowflake]
 	c.Mutex.RUnlock()
