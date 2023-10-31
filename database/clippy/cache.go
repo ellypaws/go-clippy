@@ -97,8 +97,11 @@ func (c Cache) SynchronizeAllPoints() *Cache {
 	for _, user := range users {
 		c.synchronizePoints(user.Snowflake)
 	}
+	program.Send(Sync{})
 	return &c
 }
+
+type Sync struct{}
 
 func (c Cache) QueryPoints(request Request) int {
 	if c.OptOut(request.Snowflake) || c.Private(request.Snowflake) {
