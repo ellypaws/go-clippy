@@ -3,6 +3,7 @@ package clippy
 import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/table"
+	logger "go-clippy/gui/log"
 	"sync"
 )
 
@@ -77,10 +78,10 @@ func (c Cache) synchronizePoints(snowflake string) {
 	c.Mutex.RUnlock()
 	countedAwards := c.countAwards(snowflake)
 	if configPoints == countedAwards {
-		program.Send(fmt.Sprintf("User %v has %v points, which is correct.", snowflake, configPoints))
+		program.Send(logger.Message(fmt.Sprintf("User %v has %v points, which is correct.", snowflake, configPoints)))
 		return
 	} else {
-		program.Send(fmt.Sprintf("User %v has %v points, but %v awards.", snowflake, configPoints, countedAwards))
+		program.Send(logger.Message(fmt.Sprintf("User %v has %v points, but %v awards.", snowflake, configPoints, countedAwards)))
 	}
 	c.Mutex.Lock()
 	c.Map[snowflake].Config.Points = countedAwards
