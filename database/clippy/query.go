@@ -44,6 +44,10 @@ func (config User) Record() {
 	//if exist {
 	//	config.Points = user.Points
 	//}
+	if config.Snowflake == "" {
+		program.Send(logger.Message(fmt.Sprintf("Snowflake from %v is empty", config)))
+		return
+	}
 	_, err := Users.Insert(config, bingo.Upsert)
 	if err != nil {
 		//log.Println("Error recording user: ", err)
