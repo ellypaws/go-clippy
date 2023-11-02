@@ -6,7 +6,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/nokusukun/bingo"
 	logger "go-clippy/gui/log"
-	"log"
 	"slices"
 )
 
@@ -73,33 +72,22 @@ func (moderator Moderator) Record() {
 // addPointRecord adds a point to the user's record
 // it first checks if the user is in the Cache for the user points
 // then [user.Record] will update the Cache as well
-func (c Cache) addPointRecord(user *User) {
-	c.Mutex.RLock()
-	_, ok := c.Map[user.Snowflake]
-	c.Mutex.RUnlock()
-	if !ok {
-		program.Send(logger.Message(fmt.Sprintf("User %v not in cache", user.Snowflake)))
-		var exist bool
-		user, exist = c.GetConfig(user.Snowflake)
-		if !exist {
-			log.Printf("User %v does not exist", user.Snowflake)
-			return
-		}
+func (c *Cache) addPointRecord(user *User) {
+	u, exist := c.GetConfig(user.Snowflake)
+	if !exist {
+		program.Send(logger.Message(fmt.Sprintf("user does not exist: %v", user)))
+		return
 	}
-	//log.Println("current points: ", user.Points)
-	program.Send(logger.Message(fmt.Sprintf("current points: %v", user.Points)))
-	old := user.Points
-	user.Points++
-	//log.Println("new points: ", user.Points)
-	program.Send(logger.Message(fmt.Sprintf("adding one point to user: @%v", user.Username)))
+	program.Send(logger.Message(fmt.Sprintf("current points: %v", u.Points)))
+	old := u.Points
+	u.Points++
 
 	c.synchronizePoints(user.Snowflake)
-	if user.Points == old {
-		//log.Printf("points mismatch, user.Points: %v, u.Config.Points: %v", user.Points, u.Config.Points)
+	if u.Points == old {
 		program.Send(logger.Message(fmt.Sprintf("points mismatch, still at %v", user.Points)))
 		return
 	}
-	program.Send(logger.Message(fmt.Sprintf("c.Map[%v].Config.Points = %v", user.Snowflake, user.Points)))
+	program.Send(logger.Message(fmt.Sprintf("user.Points (%v) = %v", user.Snowflake, user.Points)))
 
 	c.Mutex.Lock()
 	c.Map[user.Snowflake].Config.Points = user.Points
