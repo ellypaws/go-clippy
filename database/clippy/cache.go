@@ -29,16 +29,16 @@ func GetCache() *Cache {
 	}
 }
 
-func (c Cache) Reset() *Cache {
+func (c *Cache) Reset() *Cache {
 	c.Mutex.Lock()
 	defer c.Mutex.Unlock()
 	for k := range c.Map {
 		delete(c.Map, k)
 	}
-	return &c
+	return c
 }
 
-func (c Cache) Private(snowflake string) bool {
+func (c *Cache) Private(snowflake string) bool {
 	user, exist := c.GetConfig(snowflake)
 	if !exist {
 		return false
@@ -46,7 +46,7 @@ func (c Cache) Private(snowflake string) bool {
 	return user.Private
 }
 
-func (c Cache) OptOut(snowflake string) bool {
+func (c *Cache) OptOut(snowflake string) bool {
 	user, exist := c.GetConfig(snowflake)
 	if !exist {
 		return false
@@ -54,7 +54,8 @@ func (c Cache) OptOut(snowflake string) bool {
 	return user.OptOut
 }
 
-func (c Cache) countAwards(snowflake string) int {
+func (c *Cache) countAwards(snowflake string) int {
+	_, exist := c.GetConfig(snowflake)
 	c.Mutex.RLock()
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
@@ -93,18 +94,18 @@ func (c Cache) synchronizePoints(snowflake string) {
 	config.Record()
 }
 
-func (c Cache) SynchronizeAllPoints() *Cache {
+func (c *Cache) SynchronizeAllPoints() *Cache {
 	users := getAllUsers()
 	for _, user := range users {
 		c.synchronizePoints(user.Snowflake)
 	}
 	program.Send(Sync{})
-	return &c
+	return c
 }
 
 type Sync struct{}
 
-func (c Cache) QueryPoints(request Request) int {
+func (c *Cache) QueryPoints(request Request) int {
 	if c.OptOut(request.Snowflake) || c.Private(request.Snowflake) {
 		return 0
 	}
@@ -120,12 +121,12 @@ func (c Cache) QueryPoints(request Request) int {
 	return c.Map[request.Snowflake].Config.Points
 }
 
-func (c Cache) precacheAwards(request Request) {
+func (c *Cache) precacheAwards(request Request) {
 	users := getPublicUsers()
 	for _, user := range users {
 		c.Mutex.Lock()
 		c.Map[user.Snowflake] = &CachedUser{
-			Config: *user,
+			Config: user,
 		}
 		c.Mutex.Unlock()
 	}
@@ -144,7 +145,7 @@ func (c Cache) precacheAwards(request Request) {
 //		{"1", "Username", "000000", "15", "false"},
 //	}
 
-func (c Cache) LeaderboardTable(max int, request Request) []table.Row {
+func (c *Cache) LeaderboardTable(max int, request Request) []table.Row {
 	users := getAllUsers()
 	if len(c.Map) == 0 {
 		c.precacheAwards(request)
@@ -179,7 +180,7 @@ func (c Cache) LeaderboardTable(max int, request Request) []table.Row {
 	return rows
 }
 
-func (c Cache) LeaderboardPrecached(max int, request Request) string {
+func (c *Cache) LeaderboardPrecached(max int, request Request) string {
 	users := getPublicUsers()
 	if len(c.Map) == 0 {
 		c.precacheAwards(request)

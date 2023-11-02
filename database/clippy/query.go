@@ -109,7 +109,7 @@ func (c Cache) addPointRecord(user *User) {
 	user.Record()
 }
 
-func (c Cache) syncAwards(request Request) *bingo.QueryResult[Award] {
+func (c *Cache) syncAwards(request Request) *bingo.QueryResult[Award] {
 	result := Awards.Query(bingo.Query[Award]{
 		Filter: func(point Award) bool {
 			snowflakeMatch := request.Snowflake == "" || point.Snowflake == request.Snowflake
@@ -142,7 +142,7 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 
 // recordAward updates the Cache for the user's awards
 // if a user is not in the Cache, it will create a new entry and store the award
-func (c Cache) recordAward(award *Award) {
+func (c *Cache) recordAward(award *Award) {
 	c.Mutex.RLock()
 	user, ok := c.Map[award.Snowflake]
 	c.Mutex.RUnlock()
@@ -184,7 +184,7 @@ func (c *Cache) storeConfigToCache(config *User) {
 
 // GetConfig returns the cached config for a user
 // if it's not in the cache, it will query the database
-func (c Cache) GetConfig(snowflake string) (user *User, exist bool) {
+func (c *Cache) GetConfig(snowflake string) (user *User, exist bool) {
 	c.Mutex.RLock()
 	_, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
@@ -198,7 +198,7 @@ func (c Cache) GetConfig(snowflake string) (user *User, exist bool) {
 	}
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
-	return &c.Map[snowflake].Config, true
+	return c.Map[snowflake].Config, true
 }
 
 func getPublicUsers() (users []*User) {
