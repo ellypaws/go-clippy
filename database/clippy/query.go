@@ -20,7 +20,7 @@ type Request struct {
 // it calls [Cache.recordAward] to update the Cache for the user's awards
 // then [Cache.addPointRecord] will be called to increment the user's points
 // it will also call [User.Record] to record the new points in the database,
-// and then it will call [Cache.updateCachedConfig] to update the Cache
+// and then it will call [Cache.storeConfigToCache] to update the Cache
 func (point Award) Record() {
 	user, ok := GetCache().GetConfig(point.Snowflake)
 	if !ok {
@@ -60,7 +60,7 @@ func (config *User) Record() {
 		//log.Println("Error recording user: ", err)
 		program.Send(logger.Message(fmt.Sprintf("Error recording user: %v", err)))
 	}
-	GetCache().updateCachedConfig(config)
+	GetCache().storeConfigToCache(config)
 }
 
 func (moderator Moderator) Record() {
@@ -161,9 +161,9 @@ func (c Cache) recordAward(award *Award) {
 	}
 }
 
-// Cache.updateCachedConfig updates the cached config for a user
+// Cache.storeConfigToCache updates the cached config for a user
 // if it's not in the Cache, it will store the incoming config
-func (c Cache) updateCachedConfig(config User) {
+func (c *Cache) storeConfigToCache(config *User) {
 	c.Mutex.RLock()
 	user, ok := c.Map[config.Snowflake]
 	c.Mutex.RUnlock()
