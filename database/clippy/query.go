@@ -22,14 +22,21 @@ type Request struct {
 // it will also call [User.Record] to record the new points in the database,
 // and then it will call [Cache.updateCachedConfig] to update the Cache
 func (point Award) Record() {
-	_, err := Awards.Insert(point, bingo.Upsert)
-	if err != nil {
-		//log.Println(err)
-		program.Send(logger.Message(fmt.Sprintf("Error recording award: %v", err)))
-	}
 	user, ok := GetCache().GetConfig(point.Snowflake)
 	if !ok {
-		return
+		program.Send(logger.Message(fmt.Sprintf("no configuration exists for %v, creating...", point.Snowflake)))
+		user = &User{
+			Username:  point.Username,
+			Snowflake: point.Snowflake,
+			OptOut:    false,
+			Private:   false,
+			Points:    1,
+		}
+		user.Record()
+	}
+	_, err := Awards.Insert(point, bingo.Upsert)
+	if err != nil {
+		program.Send(logger.Message(fmt.Sprintf("Error recording award: %v", err)))
 	}
 	GetCache().recordAward(&point)
 	GetCache().addPointRecord(user)
