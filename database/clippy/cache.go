@@ -8,7 +8,7 @@ import (
 )
 
 type CachedUser struct {
-	Config User
+	Config *User
 	Awards []*Award
 }
 

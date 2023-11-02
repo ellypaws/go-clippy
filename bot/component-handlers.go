@@ -47,8 +47,8 @@ var componentHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Int
 	},
 }
 
-func newConfig(awarded *discordgo.User) clippy.User {
-	return clippy.User{
+func newConfig(awarded *discordgo.User) *clippy.User {
+	return &clippy.User{
 		Username:  awarded.Username,
 		Snowflake: awarded.ID,
 		OptOut:    false,

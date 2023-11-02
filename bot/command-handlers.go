@@ -290,13 +290,14 @@ var commandHandlers = map[string]func(bot *discordgo.Session, i *discordgo.Inter
 
 		// TODO: We can probably extract this
 		if _, ok := clippy.GetCache().GetConfig(authorSnowflake); !ok {
-			clippy.User{
+			user := clippy.User{
 				Username:  authorUsername,
 				Snowflake: authorSnowflake,
 				OptOut:    false,
 				Private:   false,
 				Points:    1,
-			}.Record()
+			}
+			user.Record()
 		}
 
 		guild, err := bot.Guild(i.GuildID)

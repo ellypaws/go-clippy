@@ -45,7 +45,7 @@ func (point Award) Record() {
 // Record records the user's config to the database
 // it first checks if the user is in the cache for the user points
 // then it will update the cache as well
-func (config User) Record() {
+func (config *User) Record() {
 	// We shouldn't grab from cache again since we're updating with new values
 	//user, exist := GetCache().GetConfig(config.Snowflake)
 	//if exist {
@@ -55,7 +55,7 @@ func (config User) Record() {
 		program.Send(logger.Message(fmt.Sprintf("Snowflake from %v is empty", config)))
 		return
 	}
-	_, err := Users.Insert(config, bingo.Upsert)
+	_, err := Users.Insert(*config, bingo.Upsert)
 	if err != nil {
 		//log.Println("Error recording user: ", err)
 		program.Send(logger.Message(fmt.Sprintf("Error recording user: %v", err)))
