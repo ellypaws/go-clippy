@@ -26,6 +26,10 @@ type ResultMsg struct {
 	message string
 }
 
+func MessageF(format string, a ...any) ResultMsg {
+	return Message(fmt.Sprintf(format, a...))
+}
+
 func Message(msg string, t ...time.Time) ResultMsg {
 	if len(t) == 0 {
 		t = []time.Time{time.Now()}
