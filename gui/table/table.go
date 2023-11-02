@@ -38,9 +38,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.table.Blur()
 				return m, promptPoints(m.table.SelectedRow()[3], m.table.SelectedRow()[2], m.table.SelectedRow()[4])
 			}
-		case "r":
-			go clippy.GetCache().SynchronizeAllPoints()
-			return m, nil
 		}
 	case Leaderboard, clippy.Sync:
 		m.table = m.UpdateLeaderboard(15)

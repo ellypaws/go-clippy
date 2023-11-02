@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbletea"
+	"go-clippy/database/clippy"
 	"go-clippy/gui/input"
 	"go-clippy/gui/load"
 	"go-clippy/gui/log"
@@ -40,6 +41,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			tbl, cmd := m.table.Update(tea.Msg(table.Leaderboard{}))
 			m.table = &tbl
 			return m, cmd
+		case key.Matches(msg, m.help.Keys.Reset):
+			if m.input.Enabled() {
+				return m.propagate(msg)
+			}
+			go clippy.GetCache().SynchronizeAllPoints()
+			return m, nil
 		}
 	case progress.FrameMsg, load.Progress, load.Goal:
 		*m.progress, cmd = m.progress.Update(msg)
