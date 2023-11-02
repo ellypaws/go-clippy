@@ -99,6 +99,11 @@ func (c *Cache) synchronizePoints(snowflake string) {
 func (c *Cache) SynchronizeAllPoints() *Cache {
 	users := getAllUsers()
 	for _, user := range users {
+		c.Mutex.Lock()
+		if _, ok := c.Map[user.Snowflake]; ok {
+			c.Map[user.Snowflake].Awards = nil
+		}
+		c.Mutex.Unlock()
 		c.synchronizePoints(user.Snowflake)
 	}
 	program.Send(Sync{})
