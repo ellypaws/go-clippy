@@ -111,7 +111,7 @@ func (c *Cache) syncAwards(request Request) *bingo.QueryResult[Award] {
 	return result
 }
 
-func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
+func queryConfig(snowflake string) *bingo.QueryResult[User] {
 	result := Users.Query(bingo.Query[User]{
 		//Filter: func(user User) bool {
 		//	return user.Snowflake == snowflake
@@ -120,11 +120,6 @@ func (c Cache) queryConfig(snowflake string) *bingo.QueryResult[User] {
 			[]byte(snowflake),
 		},
 	})
-	if !result.Any() {
-		c.Mutex.Lock()
-		c.Map[snowflake] = &CachedUser{}
-		c.Mutex.Unlock()
-	}
 	return result
 }
 
@@ -174,15 +169,16 @@ func (c *Cache) storeConfigToCache(config *User) {
 // if it's not in the cache, it will query the database
 func (c *Cache) GetConfig(snowflake string) (user *User, exist bool) {
 	c.Mutex.RLock()
-	_, ok := c.Map[snowflake]
+	cachedUser, ok := c.Map[snowflake]
 	c.Mutex.RUnlock()
+	ok = ok && cachedUser != nil && cachedUser.Config != nil
 
 	if !ok {
-		config := c.queryConfig(snowflake)
+		config := queryConfig(snowflake)
 		if !config.Any() || config.Error != nil {
-			return &User{}, false
+			return nil, false
 		}
-		c.updateCachedConfig(*config.First())
+		c.storeConfigToCache(config.First())
 	}
 	c.Mutex.RLock()
 	defer c.Mutex.RUnlock()
