@@ -57,14 +57,12 @@ func (c *Cache) OptOut(snowflake string) bool {
 func (c *Cache) countAwards(snowflake string) int {
 	_, exist := c.GetConfig(snowflake)
 	c.Mutex.RLock()
-	_, ok := c.Map[snowflake]
+	cachedUser := c.Map[snowflake]
 	c.Mutex.RUnlock()
-	if !ok || c.Map[snowflake].Awards == nil {
+	if !exist || cachedUser.Awards == nil {
 		c.syncAwards(Request{})
 	}
-	c.Mutex.RLock()
-	defer c.Mutex.RUnlock()
-	return len(c.Map[snowflake].Awards)
+	return len(cachedUser.Awards)
 }
 
 func (c Cache) synchronizePoints(snowflake string) {
