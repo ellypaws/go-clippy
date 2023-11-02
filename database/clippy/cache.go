@@ -65,16 +65,13 @@ func (c *Cache) countAwards(snowflake string) int {
 	return len(cachedUser.Awards)
 }
 
-func (c Cache) synchronizePoints(snowflake string) {
-	c.Mutex.RLock()
-	_, ok := c.Map[snowflake]
-	c.Mutex.RUnlock()
-	if !ok {
-		c.GetConfig(snowflake)
+func (c *Cache) synchronizePoints(snowflake string) {
+	user, exist := c.GetConfig(snowflake)
+	if !exist || user == nil {
+		program.Send(logger.Message(fmt.Sprintf("User %v does not exist. user %v, exist %v", snowflake, user, exist)))
+		return
 	}
-	c.Mutex.RLock()
-	configPoints := c.Map[snowflake].Config.Points
-	c.Mutex.RUnlock()
+	configPoints := user.Points
 	countedAwards := c.countAwards(snowflake)
 	if configPoints == countedAwards {
 		program.Send(logger.Message(fmt.Sprintf("User %v has %v points, which is correct.", snowflake, configPoints)))
@@ -82,6 +79,8 @@ func (c Cache) synchronizePoints(snowflake string) {
 	} else {
 		program.Send(logger.Message(fmt.Sprintf("User %v has %v points, but %v awards.", snowflake, configPoints, countedAwards)))
 	}
+	// also send a message about user.Points
+	program.Send(logger.Message(fmt.Sprintf("user.Points: %v", user.Points)))
 	c.Mutex.Lock()
 	c.Map[snowflake].Config.Points = countedAwards
 	c.Mutex.Unlock()
@@ -89,6 +88,11 @@ func (c Cache) synchronizePoints(snowflake string) {
 	c.Mutex.RLock()
 	config := c.Map[snowflake].Config
 	c.Mutex.RUnlock()
+	program.Send(logger.Message(fmt.Sprintf("Recording user %v", config)))
+	if config.Snowflake == "" {
+		program.Send(logger.Message(fmt.Sprintf("User %v has a blank snowflake", config)))
+		return
+	}
 	config.Record()
 }
 
