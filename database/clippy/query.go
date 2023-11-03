@@ -131,7 +131,10 @@ func (c *Cache) recordAward(award *Award) {
 	c.Mutex.RUnlock()
 
 	if ok {
-		user.Awards = append(user.Awards, award)
+		if user.Awards == nil {
+			user.Awards = make(map[string]*Award)
+		}
+		user.Awards[string(award.Key())] = award
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
 		c.Map[award.Snowflake] = user
@@ -139,7 +142,9 @@ func (c *Cache) recordAward(award *Award) {
 		c.Mutex.Lock()
 		defer c.Mutex.Unlock()
 		c.Map[award.Snowflake] = &CachedUser{
-			Awards: []*Award{award},
+			Awards: map[string]*Award{
+				string(award.Key()): award,
+			},
 		}
 	}
 }

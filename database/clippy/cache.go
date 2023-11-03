@@ -9,7 +9,7 @@ import (
 
 type CachedUser struct {
 	Config *User
-	Awards []*Award
+	Awards map[string]*Award
 }
 
 type Cache struct {
@@ -99,6 +99,7 @@ func (c *Cache) synchronizePoints(snowflake string) {
 func (c *Cache) SynchronizeAllPoints() *Cache {
 	users := getAllUsers()
 	for _, user := range users {
+		// TODO: Investigate why we need to reset the awards here
 		c.Mutex.Lock()
 		if _, ok := c.Map[user.Snowflake]; ok {
 			c.Map[user.Snowflake].Awards = nil
