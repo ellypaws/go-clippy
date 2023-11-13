@@ -25,7 +25,7 @@ To run the bot, you need the Bot token from the [Discord Developer Portal](https
 go-clippy.exe token YOUR_BOT_ACCESS_TOKEN
 ```
 
-The token can also be set by setting the `BOT_TOKEN` environment variable.
+The token can also be set by setting the `BOT_TOKEN` environment variable. You can also use the .env file in the working directory.
 
 | Platform       | Command                    |
 |----------------|----------------------------|
